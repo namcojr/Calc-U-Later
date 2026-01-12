@@ -130,12 +130,12 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) 
                     Brush.verticalGradient(listOf(LcdHighlight, LcdBase))
                 )
                 .border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
-                .padding(horizontal = 28.dp, vertical = 32.dp),
+                .padding(horizontal = 12.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
@@ -160,16 +160,16 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) 
                         style = MaterialTheme.typography.displayLarge,
                         color = if (state.isError) ButtonClearBottom else LcdTextPrimary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 12.dp)
+                        overflow = TextOverflow.Clip,
+                        modifier = Modifier.padding(top = 16.dp)
                     )
                     Text(
                         text = state.previousExpression,
                         style = MaterialTheme.typography.displayMedium,
                         color = LcdTextSecondary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp)
+                        overflow = TextOverflow.Clip,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
             }

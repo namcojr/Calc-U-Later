@@ -182,6 +182,19 @@ private fun performBinaryOperation(lhs: Double, rhs: Double, operation: Calculat
 }
 
 private fun formatNumber(value: Double): String {
+    if (value.isNaN() || value.isInfinite()) return "Error"
+    val absValue = kotlin.math.abs(value)
+    if (absValue >= 1e100) return "Overflow"
+    // Use scientific notation if too large or too small for display
+    if ((absValue >= 1e10 || (absValue != 0.0 && absValue < 1e-4))) {
+        val exp = String.format("%.6e", value)
+        // Format as <number> e<exp> (e.g., 1.234567e+12 -> 1.234567 e12)
+        val match = Regex("""([\-\d.]+)e([+-]?\d+)""").find(exp)
+        return if (match != null) {
+            val (num, expPart) = match.destructured
+            "$num e$expPart"
+        } else exp
+    }
     val bigDecimal = BigDecimal.valueOf(value).setScale(12, RoundingMode.HALF_UP).stripTrailingZeros()
     val plain = bigDecimal.toPlainString()
     return if (plain.length <= MAX_DISPLAY_LENGTH) plain else plain.take(MAX_DISPLAY_LENGTH)

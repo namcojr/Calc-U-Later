@@ -19,16 +19,16 @@ val Typography = Typography(
     displayLarge = TextStyle(
         fontFamily = LcdFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 58.sp,
-        lineHeight = 56.sp,
-        letterSpacing = 2.sp
+        fontSize = 36.sp,
+        lineHeight = 64.sp,
+        letterSpacing = 0.7.sp
     ),
     displayMedium = TextStyle(
         fontFamily = LcdFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 28.sp,
+        fontSize = 18.sp,
         lineHeight = 28.sp,
-        letterSpacing = 1.2.sp
+        letterSpacing = 1.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = BodyFontFamily,
