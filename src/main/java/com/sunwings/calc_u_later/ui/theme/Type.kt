@@ -6,27 +6,36 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.Composable
+import com.sunwings.calc_u_later.ui.theme.adaptiveDisplayLargeFontSize
+import com.sunwings.calc_u_later.ui.theme.adaptiveDisplayMediumFontSize
 import com.sunwings.calc_u_later.R
+
 
 val LcdFontFamily = FontFamily(
     Font(resId = R.font.led_dot_matrix, weight = FontWeight.Normal)
 )
 
+val MainDisplayFontFamily = FontFamily(
+    Font(resId = R.font.led_italic, weight = FontWeight.Normal)
+)
+
 val BodyFontFamily = FontFamily.SansSerif
 val MemoryButtonFontFamily = FontFamily.Monospace
 
-val Typography = Typography(
+@Composable
+fun adaptiveTypography() = Typography(
     displayLarge = TextStyle(
-        fontFamily = LcdFontFamily,
+        fontFamily = MainDisplayFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 36.sp,
+        fontSize = adaptiveDisplayLargeFontSize(),
         lineHeight = 64.sp,
         letterSpacing = 0.7.sp
     ),
     displayMedium = TextStyle(
         fontFamily = LcdFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 18.sp,
+        fontSize = adaptiveDisplayMediumFontSize(),
         lineHeight = 28.sp,
         letterSpacing = 1.sp
     ),

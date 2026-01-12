@@ -195,9 +195,24 @@ private fun formatNumber(value: Double): String {
             "$num e$expPart"
         } else exp
     }
-    val bigDecimal = BigDecimal.valueOf(value).setScale(12, RoundingMode.HALF_UP).stripTrailingZeros()
+    // Limit to 8 decimal places for normal display
+    val bigDecimal = BigDecimal.valueOf(value).setScale(8, RoundingMode.HALF_UP).stripTrailingZeros()
     val plain = bigDecimal.toPlainString()
     return if (plain.length <= MAX_DISPLAY_LENGTH) plain else plain.take(MAX_DISPLAY_LENGTH)
 }
 
-private fun String.toSafeDouble(): Double = toDoubleOrNull() ?: 0.0
+private fun String.toSafeDouble(): Double {
+    // Try normal parse
+    toDoubleOrNull()?.let { return it }
+    // Try scientific notation with ' e' (e.g., "1.23 e12")
+    val sciMatch = Regex("""^([\-\d.]+)\s*e([+\-]?\d+)$""").find(this.trim())
+    if (sciMatch != null) {
+        val (num, exp) = sciMatch.destructured
+        return try {
+            num.toDouble() * Math.pow(10.0, exp.toDouble())
+        } catch (_: Exception) {
+            0.0
+        }
+    }
+    return 0.0
+}
