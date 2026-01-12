@@ -8,8 +8,14 @@ val CalcBackgroundBottom = Color(0xFFD2CDC7)
 val LcdBase = Color(0xFF84B9B4)
 val LcdHighlight = Color(0xFFA9D0CB)
 val LcdBorder = Color(0xFF4E6F6C)
-val LcdTextPrimary = Color(0xFF111111)
+// Darker green to improve contrast on vintage LCD background
+val LcdTextPrimary = Color(0xFF111111) // Color(0xFF356B20) for vintage green
 val LcdTextSecondary = Color(0x66111111)
+
+// Backup/alternative LCD color suggestions:
+// Original values are saved in ColorBackup.kt
+// Vintage LCD green suggestion (more green, a bit warm):
+val LcdVintageGreen = Color(0xFF77AA44)
 
 val ButtonNumericTop = Color(0xFFF6F0E3)
 val ButtonNumericBottom = Color(0xFFE5DCCB)

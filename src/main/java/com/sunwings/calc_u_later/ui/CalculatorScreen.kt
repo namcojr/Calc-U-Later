@@ -133,8 +133,14 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) 
     ) {
         Column(
                 modifier =
-                        Modifier.background(Brush.verticalGradient(listOf(LcdHighlight, LcdBase)))
-                                .border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
+                        Modifier.background(
+                                Brush.verticalGradient(
+                                        listOf(
+                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
+                                                MaterialTheme.colorScheme.tertiary
+                                        )
+                                )
+                        ).border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
                                 .padding(horizontal = 12.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -350,7 +356,7 @@ private fun calculatorButtons(): List<List<ButtonSpec>> =
                 listOf(
                         ButtonSpec("DEL", ButtonRole.Function, CalculatorAction.Backspace),
                         ButtonSpec("0", ButtonRole.Numeric, CalculatorAction.Digit(0)),
-                        ButtonSpec(".", ButtonRole.Numeric, CalculatorAction.Decimal),
+                        ButtonSpec(",", ButtonRole.Numeric, CalculatorAction.Decimal),
                         ButtonSpec("=", ButtonRole.Equals, CalculatorAction.Equals)
                 )
         )

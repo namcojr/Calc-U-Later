@@ -76,8 +76,8 @@ private fun appendDigit(state: CalculatorState, digit: Int): CalculatorState {
 
 private fun appendDecimal(state: CalculatorState): CalculatorState {
     val base = if (state.overwriteDisplay) "0" else state.displayValue
-    if (base.contains('.')) return state
-    val next = "$base."
+    if (base.contains(',')) return state
+    val next = "$base,"
     return state.copy(displayValue = next.take(MAX_DISPLAY_LENGTH), overwriteDisplay = false)
 }
 
