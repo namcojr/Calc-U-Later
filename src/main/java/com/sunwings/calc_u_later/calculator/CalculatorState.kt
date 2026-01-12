@@ -185,34 +185,113 @@ private fun formatNumber(value: Double): String {
     if (value.isNaN() || value.isInfinite()) return "Error"
     val absValue = kotlin.math.abs(value)
     if (absValue >= 1e100) return "Overflow"
-    // Use scientific notation if too large or too small for display
-    if ((absValue >= 1e10 || (absValue != 0.0 && absValue < 1e-4))) {
-        val exp = String.format("%.6e", value)
-        // Format as <number> e<exp> (e.g., 1.234567e+12 -> 1.234567 e12)
-        val match = Regex("""([\-\d.]+)e([+-]?\d+)""").find(exp)
-        return if (match != null) {
-            val (num, expPart) = match.destructured
-            "$num e$expPart"
-        } else exp
-    }
-    // Limit to 8 decimal places for normal display
+    // Prepare a locale-neutral plain string from the double
     val bigDecimal = BigDecimal.valueOf(value).setScale(8, RoundingMode.HALF_UP).stripTrailingZeros()
     val plain = bigDecimal.toPlainString()
-    return if (plain.length <= MAX_DISPLAY_LENGTH) plain else plain.take(MAX_DISPLAY_LENGTH)
+    // Decide when to use scientific notation (visual only)
+    return try {
+        val absBd = bigDecimal.abs()
+        if (absBd >= BigDecimal("1e10") || (bigDecimal.compareTo(BigDecimal.ZERO) != 0 && absBd < BigDecimal("1e-4"))) {
+            // Use scientific notation visually, but keep invariant format
+            val exp = String.format("%.6e", value).replace(" ", "")
+            // Ensure we don't exceed display length
+            if (exp.length <= MAX_DISPLAY_LENGTH) exp else exp.take(MAX_DISPLAY_LENGTH)
+        } else {
+            // Normal number: apply Portuguese visual formatting
+            val formatted = formatForDisplay(plain, false)
+            if (formatted.length <= MAX_DISPLAY_LENGTH) formatted else formatted.take(MAX_DISPLAY_LENGTH)
+        }
+    } catch (e: Exception) {
+        // Fallback to plain representation on any unexpected error
+        if (plain.length <= MAX_DISPLAY_LENGTH) plain else plain.take(MAX_DISPLAY_LENGTH)
+    }
+}
+
+/**
+ * Pure display-only formatter.
+ * - `value`: locale-neutral numeric string (e.g. "1000000.22" or "1.23456e+15").
+ * - `isScientific`: hint to force scientific rendering (when true, return invariant scientific form).
+ *
+ * Returns a display string formatted for Portuguese locale for normal numbers (grouping '.')
+ * and ',' as decimal separator. Scientific notation is left invariant (uses '.' decimal and 'e').
+ * This function never mutates input and never throws.
+ */
+private fun formatForDisplay(value: String, isScientific: Boolean): String {
+    try {
+        val v = value.trim()
+        if (v.equals("Error", true) || v.equals("Overflow", true)) return v
+        if (v == "-0") return "0"
+
+        // Detect scientific input or forced scientific
+        if (isScientific || v.contains('e') || v.contains('E')) {
+            // Return invariant scientific notation (no localization). Remove any whitespace.
+            return v.replace(" ", "").replace('E', 'e')
+        }
+
+        // Parse as BigDecimal to preserve precision for formatting
+        val bd = try {
+            BigDecimal(v)
+        } catch (e: Exception) {
+            // If it's not a valid number, return as-is
+            return v
+        }
+
+        val absBd = bd.abs()
+        if (absBd >= BigDecimal("1e100")) return "Overflow"
+
+        // Very large/small numbers -> scientific (invariant)
+        if (absBd >= BigDecimal("1e10") || (bd.compareTo(BigDecimal.ZERO) != 0 && absBd < BigDecimal("1e-4"))) {
+            val d = try { bd.toDouble() } catch (_: Exception) { return bd.toPlainString() }
+            return String.format("%.6e", d).replace(" ", "")
+        }
+
+        // Limit to 8 decimal places, half-up, and strip trailing zeros (display-only)
+        val scaled = bd.setScale(8, RoundingMode.HALF_UP).stripTrailingZeros()
+        var plain = scaled.toPlainString()
+        if (plain == "-0") plain = "0"
+
+        // Split integer and decimal parts (plain uses '.')
+        val parts = plain.split('.')
+        val intRaw = parts[0]
+        val sign = if (intRaw.startsWith("-")) "-" else ""
+        val digits = if (sign == "") intRaw else intRaw.substring(1)
+
+        // Group thousands with '.' (visual only)
+        val grouped = digits.replace(Regex("(\\d)(?=(\\d{3})+(?!\\d))"), "$1.")
+        val intPart = sign + grouped
+
+        val decPart = if (parts.size > 1 && parts[1].isNotEmpty()) "," + parts[1] else ""
+
+        return intPart + decPart
+    } catch (e: Exception) {
+        return value
+    }
 }
 
 private fun String.toSafeDouble(): Double {
-    // Try normal parse
-    toDoubleOrNull()?.let { return it }
-    // Try scientific notation with ' e' (e.g., "1.23 e12")
-    val sciMatch = Regex("""^([\-\d.]+)\s*e([+\-]?\d+)$""").find(this.trim())
-    if (sciMatch != null) {
-        val (num, exp) = sciMatch.destructured
-        return try {
-            num.toDouble() * Math.pow(10.0, exp.toDouble())
-        } catch (_: Exception) {
-            0.0
+    val raw = this.trim()
+    if (raw.equals("Error", true) || raw.equals("Overflow", true)) return 0.0
+
+    // If scientific notation present, parse directly after removing spaces
+    if (raw.contains('e') || raw.contains('E')) {
+        val s = raw.replace(" ", "").replace('E', 'e')
+        return s.toDoubleOrNull() ?: run {
+            // Try regex fallback
+            val sciMatch = Regex("""^([\-\d.]+)e([+\-]?\d+)$""").find(s)
+            if (sciMatch != null) {
+                val (num, exp) = sciMatch.destructured
+                try {
+                    num.toDouble() * Math.pow(10.0, exp.toDouble())
+                } catch (_: Exception) { 0.0 }
+            } else 0.0
         }
     }
-    return 0.0
+
+    // If string uses Portuguese formatting (contains ',') then normalize: remove grouping '.' and replace ',' with '.'
+    val normalized = if (raw.contains(',')) {
+        raw.replace(".", "").replace(",", ".")
+    } else raw
+
+    // Try normal parse on normalized string
+    return normalized.toDoubleOrNull() ?: 0.0
 }
