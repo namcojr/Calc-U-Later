@@ -50,11 +50,11 @@ A beautiful, realistic calculator app for Android, built with Jetpack Compose.
 
 ## Input Validation
 
-- The app enforces a per-number digit limit: users cannot enter more than **9 digits** in a single number segment (signs and the decimal separator are allowed and do not count toward the 9-digit limit). This ensures predictable formatting and prevents excessively long inputs.
+- The app enforces a per-number digit limit: users cannot enter more than **10 digits** in a single number segment (signs and the decimal separator are allowed and do not count toward the 10-digit limit). This ensures predictable formatting and prevents excessively long inputs.
 
    Examples:
-   - Allowed: `-12345,1245`, `1,12346789`, `-300`, `+898756374` (signs and decimal are OK when total digits <= 9)
-   - Disallowed: `12345678901`, `12345,123456798`, `-8756475902,22` (these have more than 9 digits in one number segment)
+   - Allowed: `-12345,12345`, `1,123456789`, `-300`, `+8987656374` (signs and decimal are OK when total digits <= 10)
+   - Disallowed: `12345678901`, `12345,123456798`, `-8756475902,22` (these have more than 10 digits in one number segment)
 
 - The validation lives in `calculator/CalculatorState.kt` and is applied centrally so both UI and programmatic inputs are restricted consistently.
 

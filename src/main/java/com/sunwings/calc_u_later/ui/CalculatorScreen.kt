@@ -41,7 +41,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sunwings.calc_u_later.R
@@ -65,128 +68,179 @@ import com.sunwings.calc_u_later.ui.theme.ButtonShadow
 import com.sunwings.calc_u_later.ui.theme.CalcBackgroundBottom
 import com.sunwings.calc_u_later.ui.theme.CalcBackgroundTop
 import com.sunwings.calc_u_later.ui.theme.CalcULaterTheme
-import com.sunwings.calc_u_later.ui.theme.LcdBase
 import com.sunwings.calc_u_later.ui.theme.LcdBorder
-import com.sunwings.calc_u_later.ui.theme.LcdHighlight
 import com.sunwings.calc_u_later.ui.theme.LcdTextPrimary
 import com.sunwings.calc_u_later.ui.theme.LcdTextSecondary
 import com.sunwings.calc_u_later.ui.theme.adaptiveTypography
 
 @Composable
 fun CalculatorScreen(modifier: Modifier = Modifier) {
-    var state by rememberSaveable { mutableStateOf(CalculatorState()) }
+        var state by rememberSaveable { mutableStateOf(CalculatorState()) }
 
-    val buttonRows = remember { calculatorButtons() }
+        val buttonRows = remember { calculatorButtons() }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Image(
-                painter = painterResource(R.drawable.aluminum),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-        )
-        Box(
-                modifier =
-                        Modifier.fillMaxSize()
-                                .background(
-                                        Brush.verticalGradient(
-                                                listOf(
-                                                        CalcBackgroundTop.copy(alpha = 0.5f),
-                                                        CalcBackgroundBottom.copy(alpha = 0.5f)
+        Box(modifier = modifier.fillMaxSize()) {
+                Image(
+                        painter = painterResource(R.drawable.aluminum),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                        modifier =
+                                Modifier.fillMaxSize()
+                                        .background(
+                                                Brush.verticalGradient(
+                                                        listOf(
+                                                                CalcBackgroundTop.copy(
+                                                                        alpha = 0.5f
+                                                                ),
+                                                                CalcBackgroundBottom.copy(
+                                                                        alpha = 0.5f
+                                                                )
+                                                        )
                                                 )
                                         )
-                                )
-                                .padding(horizontal = 24.dp, vertical = 36.dp)
-        ) {
-            Column(
-                    verticalArrangement = Arrangement.spacedBy(58.dp), // LCD to Button Grid spacing
-                    modifier =
-                            Modifier.fillMaxSize()
-                                    .padding(
-                                            top = 42.dp
-                                    ) // Top padding from the top of the phone screen
-            ) {
-                DisplayPanel(state = state)
-                ButtonGrid(buttonRows = buttonRows) { action ->
-                    state = onCalculatorAction(state, action)
+                                        .padding(horizontal = 24.dp, vertical = 36.dp)
+                ) {
+                        Column(
+                                verticalArrangement =
+                                        Arrangement.spacedBy(58.dp), // LCD to Button Grid spacing
+                                modifier =
+                                        Modifier.fillMaxSize()
+                                                .padding(
+                                                        top = 42.dp
+                                                ) // Top padding from the top of the phone screen
+                        ) {
+                                DisplayPanel(state = state)
+                                ButtonGrid(buttonRows = buttonRows) { action ->
+                                        state = onCalculatorAction(state, action)
+                                }
+                        }
                 }
-            }
         }
-    }
 }
 
 @Composable
 private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) {
-    Surface(
-            modifier =
-                    modifier.fillMaxWidth()
-                            .heightIn(min = 180.dp)
-                            .shadow(
-                                    12.dp,
-                                    RoundedCornerShape(28.dp),
-                                    clip = false,
-                                    ambientColor = ButtonShadow,
-                                    spotColor = ButtonShadow
-                            ),
-            shape = RoundedCornerShape(28.dp),
-            color = Color.Transparent
-    ) {
-        Column(
+        Surface(
                 modifier =
-                        Modifier.background(
-                                Brush.verticalGradient(
-                                        listOf(
-                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
-                                                MaterialTheme.colorScheme.tertiary
-                                        )
-                                )
-                        ).border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
-                                .padding(horizontal = 12.dp, vertical = 24.dp),
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier.fillMaxWidth()
+                                .heightIn(min = 180.dp)
+                                .shadow(
+                                        12.dp,
+                                        RoundedCornerShape(28.dp),
+                                        clip = false,
+                                        ambientColor = ButtonShadow,
+                                        spotColor = ButtonShadow
+                                ),
+                shape = RoundedCornerShape(28.dp),
+                color = Color.Transparent
         ) {
-            Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-            ) {
-                val memoryAlpha by
-                        animateFloatAsState(
-                                targetValue = if (state.memoryValue == 0.0) 0f else 1f,
-                                label = "memoryIndicatorAlpha"
-                        )
-                Text(
-                        text = "M",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = LcdTextSecondary.copy(alpha = memoryAlpha),
-                        modifier = Modifier.padding(top = 2.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Clip
-                )
                 Column(
+                        modifier =
+                                Modifier.background(
+                                                Brush.verticalGradient(
+                                                        listOf(
+                                                                MaterialTheme.colorScheme.tertiary
+                                                                        .copy(alpha = 0.9f),
+                                                                MaterialTheme.colorScheme.tertiary
+                                                        )
+                                                )
+                                        )
+                                        .border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
+                                        .padding(horizontal = 12.dp, vertical = 24.dp),
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                            text = state.displayValue,
-                            style = adaptiveTypography().displayLarge,
-                            color = if (state.isError) ButtonClearBottom else LcdTextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Clip,
-                            modifier = Modifier.padding(top = 16.dp)
-                    )
-                    Text(
-                            text = state.previousExpression,
-                            style = adaptiveTypography().displayMedium,
-                            color = LcdTextSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Clip,
-                            modifier = Modifier.padding(top = 8.dp)
-                    )
+                        Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                        ) {
+                                val memoryAlpha by
+                                        animateFloatAsState(
+                                                targetValue =
+                                                        if (state.memoryValue == 0.0) 0f else 1f,
+                                                label = "memoryIndicatorAlpha"
+                                        )
+                                Text(
+                                        text = "M",
+                                        style = MaterialTheme.typography.displayMedium,
+                                        color = LcdTextSecondary.copy(alpha = memoryAlpha),
+                                        modifier = Modifier.padding(top = 2.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip
+                                )
+                                Box(modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp)) {
+                                        Column(
+                                                modifier =
+                                                        Modifier.align(Alignment.TopEnd)
+                                                                .height(120.dp),
+                                                horizontalAlignment = Alignment.End,
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                                // Invisible measuring text always includes a
+                                                // trailing comma so the
+                                                // layout reserves space for descenders and the
+                                                // visible text won't jump.
+                                                Box(modifier = Modifier.height(72.dp)) {
+                                                        Text(
+                                                                text = state.displayValue + ",",
+                                                                style =
+                                                                        adaptiveTypography()
+                                                                                .displayLarge,
+                                                                color =
+                                                                        LcdTextPrimary.copy(
+                                                                                alpha = 0f
+                                                                        ),
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Clip,
+                                                                modifier =
+                                                                        Modifier.matchParentSize()
+                                                        )
+                                                        Text(
+                                                                text =
+                                                                        buildAnnotatedString {
+                                                                                append(
+                                                                                        state.displayValue
+                                                                                )
+                                                                                withStyle(
+                                                                                        SpanStyle(
+                                                                                                color =
+                                                                                                        Color.Transparent
+                                                                                        )
+                                                                                ) { append(",") }
+                                                                        },
+                                                                style =
+                                                                        adaptiveTypography()
+                                                                                .displayLarge
+                                                                                .copy(
+                                                                                        lineHeight =
+                                                                                                adaptiveTypography()
+                                                                                                        .displayLarge
+                                                                                                        .fontSize *
+                                                                                                        1.1f
+                                                                                ),
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Clip
+                                                        )
+                                                }
+                                                Text(
+                                                        text = state.previousExpression,
+                                                        style = adaptiveTypography().displayMedium,
+                                                        color = LcdTextSecondary,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Clip,
+                                                        modifier =
+                                                                Modifier.height(28.dp)
+                                                                        .padding(top = 12.dp)
+                                                )
+                                        }
+                                }
+                        }
                 }
-            }
         }
-    }
 }
 
 @Composable
@@ -195,87 +249,101 @@ private fun ButtonGrid(
         modifier: Modifier = Modifier,
         onAction: (CalculatorAction) -> Unit
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val spacing = 14.dp
-        val buttonSize = (maxWidth - spacing * 3) / 4
-        Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
-            buttonRows.forEachIndexed { index, row ->
-                val height = if (index == 0) buttonSize * 0.65f else buttonSize
-                Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(spacing)
-                ) {
-                    row.forEach { spec ->
-                        CalculatorButton(
-                                spec = spec,
-                                modifier = Modifier.width(buttonSize).height(height)
-                        ) { onAction(spec.action) }
-                    }
+        BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+                val spacing = 14.dp
+                val buttonSize = (maxWidth - spacing * 3) / 4
+                Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                        buttonRows.forEachIndexed { index, row ->
+                                val height = if (index == 0) buttonSize * 0.65f else buttonSize
+                                Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(spacing)
+                                ) {
+                                        row.forEach { spec ->
+                                                CalculatorButton(
+                                                        spec = spec,
+                                                        modifier =
+                                                                Modifier.width(buttonSize)
+                                                                        .height(height)
+                                                ) { onAction(spec.action) }
+                                        }
+                                }
+                        }
                 }
-            }
         }
-    }
 }
 
 @Composable
 private fun CalculatorButton(spec: ButtonSpec, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val palette = spec.role.palette()
-    val highlightColor = if (isPressed) palette.top.adjust(0.9f) else palette.top.adjust(1.05f)
-    val shadowColor = if (isPressed) palette.bottom.adjust(0.85f) else palette.bottom.adjust(0.95f)
-    val usesMemoryFont = spec.role == ButtonRole.Memory || spec.label == "DEL"
-    val textStyle =
-            if (usesMemoryFont) {
-                MaterialTheme.typography.labelMedium
-            } else {
-                MaterialTheme.typography.labelLarge
-            }
-    val gradient =
-            remember(isPressed, palette) {
-                Brush.linearGradient(
-                        colors = listOf(highlightColor, shadowColor),
-                        start = Offset.Zero,
-                        end = Offset.Infinite
-                )
-            }
-    val buttonShape = RoundedCornerShape(18.dp)
-    val density = LocalDensity.current
-    val shadowOffsetPx = with(density) { 1.dp.toPx() }
-    val cornerPx = with(density) { 18.dp.toPx() }
-
-    Surface(
-            modifier =
-                    modifier.drawBehind {
-                        drawRoundRect(
-                                color = ButtonShadow.copy(alpha = 0.35f),
-                                topLeft = Offset(-shadowOffsetPx, shadowOffsetPx),
-                                size =
-                                        Size(
-                                                size.width + shadowOffsetPx,
-                                                size.height + shadowOffsetPx
-                                        ),
-                                cornerRadius = CornerRadius(cornerPx, cornerPx)
+        val interactionSource = remember { MutableInteractionSource() }
+        val isPressed by interactionSource.collectIsPressedAsState()
+        val palette = spec.role.palette()
+        val highlightColor = if (isPressed) palette.top.adjust(0.9f) else palette.top.adjust(1.05f)
+        val shadowColor =
+                if (isPressed) palette.bottom.adjust(0.85f) else palette.bottom.adjust(0.95f)
+        val usesMemoryFont = spec.role == ButtonRole.Memory || spec.label == "DEL"
+        val textStyle =
+                if (usesMemoryFont) {
+                        MaterialTheme.typography.labelMedium
+                } else {
+                        MaterialTheme.typography.labelLarge
+                }
+        val gradient =
+                remember(isPressed, palette) {
+                        Brush.linearGradient(
+                                colors = listOf(highlightColor, shadowColor),
+                                start = Offset.Zero,
+                                end = Offset.Infinite
                         )
-                    },
-            color = Color.Transparent,
-            shape = buttonShape
-    ) {
-        Box(
+                }
+        val buttonShape = RoundedCornerShape(18.dp)
+        val density = LocalDensity.current
+        val shadowOffsetPx = with(density) { 1.dp.toPx() }
+        val cornerPx = with(density) { 18.dp.toPx() }
+
+        Surface(
                 modifier =
-                        Modifier.fillMaxSize()
-                                .clip(buttonShape)
-                                .background(gradient)
-                                .border(1.3.dp, ButtonBorder.copy(alpha = 0.75f), buttonShape)
-                                .clickable(
-                                        interactionSource = interactionSource,
-                                        indication = null,
-                                        onClick = onClick
+                        modifier.drawBehind {
+                                drawRoundRect(
+                                        color = ButtonShadow.copy(alpha = 0.35f),
+                                        topLeft = Offset(-shadowOffsetPx, shadowOffsetPx),
+                                        size =
+                                                Size(
+                                                        size.width + shadowOffsetPx,
+                                                        size.height + shadowOffsetPx
+                                                ),
+                                        cornerRadius = CornerRadius(cornerPx, cornerPx)
                                 )
-                                .padding(vertical = 6.dp),
-                contentAlignment = Alignment.Center
-        ) { Text(text = spec.label, style = textStyle, color = palette.content, maxLines = 1) }
-    }
+                        },
+                color = Color.Transparent,
+                shape = buttonShape
+        ) {
+                Box(
+                        modifier =
+                                Modifier.fillMaxSize()
+                                        .clip(buttonShape)
+                                        .background(gradient)
+                                        .border(
+                                                1.3.dp,
+                                                ButtonBorder.copy(alpha = 0.75f),
+                                                buttonShape
+                                        )
+                                        .clickable(
+                                                interactionSource = interactionSource,
+                                                indication = null,
+                                                onClick = onClick
+                                        )
+                                        .padding(vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                ) {
+                        Text(
+                                text = spec.label,
+                                style = textStyle,
+                                color = palette.content,
+                                maxLines = 1
+                        )
+                }
+        }
 }
 
 private data class ButtonSpec(
@@ -285,24 +353,27 @@ private data class ButtonSpec(
 )
 
 private enum class ButtonRole {
-    Memory,
-    Function,
-    Operator,
-    Numeric,
-    Clear,
-    Equals
+        Memory,
+        Function,
+        Operator,
+        Numeric,
+        Clear,
+        Equals
 }
 
 private data class ButtonPalette(val top: Color, val bottom: Color, val content: Color)
 
 private fun ButtonRole.palette(): ButtonPalette =
         when (this) {
-            ButtonRole.Memory -> ButtonPalette(ButtonFunctionTop, ButtonFunctionBottom, Color.White)
-            ButtonRole.Function -> ButtonPalette(ButtonOperatorTop, ButtonOperatorBottom, BaseText)
-            ButtonRole.Operator -> ButtonPalette(ButtonOperatorTop, ButtonOperatorBottom, BaseText)
-            ButtonRole.Numeric -> ButtonPalette(ButtonNumericTop, ButtonNumericBottom, BaseText)
-            ButtonRole.Clear -> ButtonPalette(ButtonClearTop, ButtonClearBottom, Color.White)
-            ButtonRole.Equals -> ButtonPalette(ButtonEqualsTop, ButtonEqualsBottom, Color.White)
+                ButtonRole.Memory ->
+                        ButtonPalette(ButtonFunctionTop, ButtonFunctionBottom, Color.White)
+                ButtonRole.Function ->
+                        ButtonPalette(ButtonOperatorTop, ButtonOperatorBottom, BaseText)
+                ButtonRole.Operator ->
+                        ButtonPalette(ButtonOperatorTop, ButtonOperatorBottom, BaseText)
+                ButtonRole.Numeric -> ButtonPalette(ButtonNumericTop, ButtonNumericBottom, BaseText)
+                ButtonRole.Clear -> ButtonPalette(ButtonClearTop, ButtonClearBottom, Color.White)
+                ButtonRole.Equals -> ButtonPalette(ButtonEqualsTop, ButtonEqualsBottom, Color.White)
         }
 
 private fun calculatorButtons(): List<List<ButtonSpec>> =
@@ -362,14 +433,14 @@ private fun calculatorButtons(): List<List<ButtonSpec>> =
         )
 
 private fun Color.adjust(multiplier: Float): Color {
-    val r = (red * multiplier).coerceIn(0f, 1f)
-    val g = (green * multiplier).coerceIn(0f, 1f)
-    val b = (blue * multiplier).coerceIn(0f, 1f)
-    return Color(r, g, b, alpha)
+        val r = (red * multiplier).coerceIn(0f, 1f)
+        val g = (green * multiplier).coerceIn(0f, 1f)
+        val b = (blue * multiplier).coerceIn(0f, 1f)
+        return Color(r, g, b, alpha)
 }
 
 @Preview
 @Composable
 private fun CalculatorScreenPreview() {
-    CalcULaterTheme { CalculatorScreen() }
+        CalcULaterTheme { CalculatorScreen() }
 }
