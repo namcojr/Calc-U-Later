@@ -48,6 +48,21 @@ A beautiful, realistic calculator app for Android, built with Jetpack Compose.
 - Adjust button layout or add features in `ui/CalculatorScreen.kt`
 - Update calculation logic in `calculator/CalculatorState.kt`
 
+## Input Validation
+
+- The app enforces a per-number digit limit: users cannot enter more than **9 digits** in a single number segment (signs and the decimal separator are allowed and do not count toward the 9-digit limit). This ensures predictable formatting and prevents excessively long inputs.
+
+   Examples:
+   - Allowed: `-12345,1245`, `1,12346789`, `-300`, `+898756374` (signs and decimal are OK when total digits <= 9)
+   - Disallowed: `12345678901`, `12345,123456798`, `-8756475902,22` (these have more than 9 digits in one number segment)
+
+- The validation lives in `calculator/CalculatorState.kt` and is applied centrally so both UI and programmatic inputs are restricted consistently.
+
+## Tests
+
+- Unit tests for the input digit-limit logic are included under `src/test/java/com/sunwings/calc_u_later/calculator/CalculatorDigitLimitTest.kt`.
+
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.

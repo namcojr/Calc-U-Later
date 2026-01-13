@@ -6,6 +6,7 @@ import java.math.RoundingMode
 import kotlin.math.abs
 
 private const val MAX_DISPLAY_LENGTH = 14
+private const val MAX_DIGITS_PER_NUMBER = 9
 
 data class CalculatorState(
     val displayValue: String = "0",
@@ -62,6 +63,9 @@ fun onCalculatorAction(state: CalculatorState, action: CalculatorAction): Calcul
 
 private fun appendDigit(state: CalculatorState, digit: Int): CalculatorState {
     val cleanDigit = digit.coerceIn(0, 9).toString()
+    // Enforce per-number digit limit (ignoring sign and decimal separator)
+    if (!canAppendDigit(state.displayValue, state.overwriteDisplay)) return state
+
     val nextValue = when {
         state.overwriteDisplay || state.displayValue == "0" -> cleanDigit
         state.displayValue.length >= MAX_DISPLAY_LENGTH -> state.displayValue
@@ -76,9 +80,30 @@ private fun appendDigit(state: CalculatorState, digit: Int): CalculatorState {
 
 private fun appendDecimal(state: CalculatorState): CalculatorState {
     val base = if (state.overwriteDisplay) "0" else state.displayValue
+    // If current number already has a decimal separator, ignore.
     if (base.contains(',')) return state
+
+    // Allow decimal only if digit count won't exceed limit after adding digits.
+    // Adding a decimal doesn't increase digit count but avoids a later digit append if limit reached.
     val next = "$base,"
     return state.copy(displayValue = next.take(MAX_DISPLAY_LENGTH), overwriteDisplay = false)
+}
+
+/**
+ * Returns true if a digit may be appended to the current input considering
+ * the per-number digit limit (ignores sign and decimal separator).
+ */
+internal fun canAppendDigit(displayValue: String, overwriteDisplay: Boolean): Boolean {
+    if (overwriteDisplay) return true
+    // Determine the current number segment (after the last operator symbol)
+    // Operators use symbols: +, −, ×, ÷ (note: subtraction uses Unicode minus)
+    val ops = listOf('+', '−', '×', '÷')
+    val lastOpIndex = displayValue.lastIndexOfAny(ops.toCharArray())
+    val segment = if (lastOpIndex == -1) displayValue else displayValue.substring(lastOpIndex + 1)
+
+    // Count digits (0-9) in the segment, ignore sign and comma
+    val digitCount = segment.count { it in '0'..'9' }
+    return digitCount < MAX_DIGITS_PER_NUMBER
 }
 
 private fun applyOperation(state: CalculatorState, operation: CalculatorOperation): CalculatorState {
