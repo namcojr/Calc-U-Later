@@ -5,8 +5,9 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.math.abs
 
-private const val MAX_DISPLAY_LENGTH = 14
-private const val MAX_DIGITS_PER_NUMBER = 9
+// Display can show longer computed results; keep input digit limit separate
+private const val MAX_DISPLAY_LENGTH = 24
+private const val MAX_DIGITS_PER_NUMBER = 10
 
 data class CalculatorState(
     val displayValue: String = "0",

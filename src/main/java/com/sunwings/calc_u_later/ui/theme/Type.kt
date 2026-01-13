@@ -37,7 +37,7 @@ fun adaptiveTypography() = Typography(
         fontWeight = FontWeight.Normal,
         fontSize = adaptiveDisplayMediumFontSize(),
         lineHeight = 28.sp,
-        letterSpacing = 1.sp
+        letterSpacing = 0.5.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = BodyFontFamily,
