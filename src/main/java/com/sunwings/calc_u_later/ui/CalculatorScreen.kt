@@ -149,7 +149,7 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) 
                                                 )
                                         )
                                         .border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
-                                        .padding(horizontal = 12.dp, vertical = 24.dp),
+                                        .padding(horizontal = 8.dp, vertical = 24.dp),
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {

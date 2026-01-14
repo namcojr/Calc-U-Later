@@ -30,14 +30,14 @@ fun adaptiveTypography() = Typography(
         fontWeight = FontWeight.Normal,
         fontSize = adaptiveDisplayLargeFontSize(),
         lineHeight = 64.sp,
-        letterSpacing = 0.7.sp
+        letterSpacing = 0.5.sp
     ),
     displayMedium = TextStyle(
         fontFamily = LcdFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = adaptiveDisplayMediumFontSize(),
         lineHeight = 28.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = BodyFontFamily,
