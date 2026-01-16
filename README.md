@@ -12,6 +12,10 @@ A beautiful, realistic calculator app for Android, built with Jetpack Compose.
 - Handles large/small numbers with scientific notation (e.g., `1.23 e12`)
 - Displays "Overflow" for results above 1e100
 - Error handling for invalid operations (e.g., division by zero)
+ - Locale-aware number formatting and parsing
+    - Supports two display styles: grouping `.` + decimal `,` (Portuguese style), and grouping `,` + decimal `.` (English/US style)
+    - Long-press the LCD display to toggle the number format
+    - The selected format is persisted across app restarts
 
 ## Screenshots
 
@@ -57,6 +61,33 @@ A beautiful, realistic calculator app for Android, built with Jetpack Compose.
    - Disallowed: `12345678901`, `12345,123456798`, `-8756475902,22` (these have more than 10 digits in one number segment)
 
 - The validation lives in `calculator/CalculatorState.kt` and is applied centrally so both UI and programmatic inputs are restricted consistently.
+
+## Locale / Formatting Behavior
+
+- Number formatting is centralized in `calculator/CalculatorState.kt` with `NumberFormatStyle`.
+- Parsing and evaluation are locale-aware: displayed numbers (with grouping) are parsed back to their correct numeric value for computation.
+- When toggling locale format (long-press on the display), the current calculation result and pending operation are cleared to avoid mismatches between visual formatting and internal numeric representation.
+
+## Tests
+
+- The project includes unit tests covering operations, edge cases, digit limits, display fit, and locale-specific behavior. See `src/test/java/com/sunwings/calc_u_later/calculator`.
+- New tests cover:
+   - `ToggleLocaleFormat` resets display and pending state.
+   - `Clear` preserves the chosen `localeFormat`.
+   - Formatting correctness for grouping and decimal separators during operations.
+
+## How it works
+
+- Long-press the LCD display to toggle the number-format style between:
+   - Grouping `.` with decimal `,` (e.g. `1.234,56`) and
+   - Grouping `,` with decimal `.` (e.g. `1,234.56`).
+- The toggle clears the current result and pending operation to avoid visual vs internal numeric mismatches.
+- The chosen preference is saved persistently using Jetpack DataStore so it remains after app restarts.
+
+Screenshot (example):
+
+![Long-press Toggle](docs/long-press-screenshot.png)
+
 
 ## Tests
 

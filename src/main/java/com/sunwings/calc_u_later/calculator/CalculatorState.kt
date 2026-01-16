@@ -13,6 +13,15 @@ private const val MAX_DISPLAY_LENGTH = 24
 private const val LEFT_PREVIOUS_VISIBLE_LIMIT = 14
 private const val MAX_DIGITS_PER_NUMBER = 10
 
+/**
+ * Supported display formats for numbers.
+ * - DOT_GROUP_DECIMAL_COMMA: grouping with '.' and decimal with ',' (current Portuguese)
+ * - COMMA_GROUP_DECIMAL_DOT: grouping with ',' and decimal with '.' (e.g., US/EN)
+ */
+enum class NumberFormatStyle {
+    DOT_GROUP_DECIMAL_COMMA,
+    COMMA_GROUP_DECIMAL_DOT
+}
 data class CalculatorState(
     val displayValue: String = "0",
     val previousExpression: String = "",
@@ -20,6 +29,7 @@ data class CalculatorState(
     val pendingOperation: CalculatorOperation? = null,
     val overwriteDisplay: Boolean = true,
     val memoryValue: Double = 0.0,
+    val localeFormat: NumberFormatStyle = NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA,
     val isError: Boolean = false
 ) : Serializable
 
@@ -43,6 +53,7 @@ sealed interface CalculatorAction {
     object MemoryRecall : CalculatorAction
     object MemoryAdd : CalculatorAction
     object MemorySubtract : CalculatorAction
+    object ToggleLocaleFormat : CalculatorAction
 }
 
 fun onCalculatorAction(state: CalculatorState, action: CalculatorAction): CalculatorState {
@@ -55,14 +66,32 @@ fun onCalculatorAction(state: CalculatorState, action: CalculatorAction): Calcul
         CalculatorAction.Decimal -> appendDecimal(state)
         is CalculatorAction.Operation -> applyOperation(state, action.type)
         CalculatorAction.Equals -> evaluate(state)
+        // Clear resets the display and pending operation but intentionally preserves
+        // user preferences such as `localeFormat` and `memoryValue`.
         CalculatorAction.Clear -> state.reset()
         CalculatorAction.Percent -> applyPercent(state)
         CalculatorAction.ToggleSign -> toggleSign(state)
         CalculatorAction.Backspace -> backspace(state)
         CalculatorAction.MemoryClear -> state.copy(memoryValue = 0.0)
         CalculatorAction.MemoryRecall -> state.withDisplay(state.memoryValue)
-        CalculatorAction.MemoryAdd -> state.copy(memoryValue = state.memoryValue + state.displayValue.toSafeDouble())
-        CalculatorAction.MemorySubtract -> state.copy(memoryValue = state.memoryValue - state.displayValue.toSafeDouble())
+        CalculatorAction.MemoryAdd -> state.copy(memoryValue = state.memoryValue + state.displayValue.toSafeDouble(state.localeFormat))
+        CalculatorAction.MemorySubtract -> state.copy(memoryValue = state.memoryValue - state.displayValue.toSafeDouble(state.localeFormat))
+        // ToggleLocaleFormat switches the display/parsing mode between supported styles.
+        // To avoid format mismatches (visual vs internal numeric) the action clears
+        // any current result and pending operation so the user starts fresh under
+        // the new formatting rules.
+        CalculatorAction.ToggleLocaleFormat -> state.copy(
+            localeFormat = when (state.localeFormat) {
+                NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA -> NumberFormatStyle.COMMA_GROUP_DECIMAL_DOT
+                NumberFormatStyle.COMMA_GROUP_DECIMAL_DOT -> NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA
+            },
+            displayValue = "0",
+            previousExpression = "",
+            accumulator = null,
+            pendingOperation = null,
+            overwriteDisplay = true,
+            isError = false
+        )
     }
 }
 
@@ -85,12 +114,14 @@ private fun appendDigit(state: CalculatorState, digit: Int): CalculatorState {
 
 private fun appendDecimal(state: CalculatorState): CalculatorState {
     val base = if (state.overwriteDisplay) "0" else state.displayValue
+    // Determine decimal separator for current locale
+    val decimalSep = if (state.localeFormat == NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA) ',' else '.'
     // If current number already has a decimal separator, ignore.
-    if (base.contains(',')) return state
+    if (base.contains(decimalSep)) return state
 
     // Allow decimal only if digit count won't exceed limit after adding digits.
     // Adding a decimal doesn't increase digit count but avoids a later digit append if limit reached.
-    val next = "$base,"
+    val next = "$base$decimalSep"
     return state.copy(displayValue = next.take(MAX_DISPLAY_LENGTH), overwriteDisplay = false)
 }
 
@@ -112,13 +143,13 @@ internal fun canAppendDigit(displayValue: String, overwriteDisplay: Boolean): Bo
 }
 
 private fun applyOperation(state: CalculatorState, operation: CalculatorOperation): CalculatorState {
-    val currentValue = state.displayValue.toSafeDouble()
+    val currentValue = state.displayValue.toSafeDouble(state.localeFormat)
 
     if (state.accumulator != null && state.pendingOperation != null && !state.overwriteDisplay) {
         val result = performBinaryOperation(state.accumulator, currentValue, state.pendingOperation)
             ?: return state.errorState()
-        val formattedResult = formatNumber(result)
-        val leftForPrev = if (formatNumber(result).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(result)
+        val formattedResult = formatNumber(result, state.localeFormat)
+        val leftForPrev = if (formatNumber(result, state.localeFormat).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(result, state.localeFormat)
         return state.copy(
             displayValue = formattedResult,
             accumulator = result,
@@ -130,7 +161,7 @@ private fun applyOperation(state: CalculatorState, operation: CalculatorOperatio
     }
 
     val baseValue = state.accumulator ?: currentValue
-    val leftForPrev = if (formatNumber(baseValue).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(baseValue)
+    val leftForPrev = if (formatNumber(baseValue, state.localeFormat).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(baseValue, state.localeFormat)
     return state.copy(
         accumulator = baseValue,
         pendingOperation = operation,
@@ -143,12 +174,12 @@ private fun applyOperation(state: CalculatorState, operation: CalculatorOperatio
 private fun evaluate(state: CalculatorState): CalculatorState {
     val op = state.pendingOperation ?: return state
     val accumulator = state.accumulator ?: return state
-    val currentValue = state.displayValue.toSafeDouble()
+    val currentValue = state.displayValue.toSafeDouble(state.localeFormat)
     val result = performBinaryOperation(accumulator, currentValue, op) ?: return state.errorState()
-    val leftForPrev = if (formatNumber(accumulator).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(accumulator)
-    val rightForPrev = formatNumber(currentValue)
+    val leftForPrev = if (formatNumber(accumulator, state.localeFormat).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(accumulator, state.localeFormat)
+    val rightForPrev = formatNumber(currentValue, state.localeFormat)
     return state.copy(
-        displayValue = formatNumber(result),
+        displayValue = formatNumber(result, state.localeFormat),
         previousExpression = "$leftForPrev ${op.symbol} $rightForPrev =",
         accumulator = null,
         pendingOperation = null,
@@ -158,25 +189,25 @@ private fun evaluate(state: CalculatorState): CalculatorState {
 }
 
 private fun applyPercent(state: CalculatorState): CalculatorState {
-    val currentValue = state.displayValue.toSafeDouble()
+    val currentValue = state.displayValue.toSafeDouble(state.localeFormat)
     val basis = if (state.accumulator != null && state.pendingOperation != null) {
         state.accumulator * (currentValue / 100.0)
     } else {
         currentValue / 100.0
     }
     return state.copy(
-        displayValue = formatNumber(basis),
+        displayValue = formatNumber(basis, state.localeFormat),
         overwriteDisplay = true,
         isError = false
     )
 }
 
 private fun toggleSign(state: CalculatorState): CalculatorState {
-    val currentValue = state.displayValue.toSafeDouble()
+    val currentValue = state.displayValue.toSafeDouble(state.localeFormat)
     if (currentValue == 0.0) return state
     val toggled = -currentValue
     return state.copy(
-        displayValue = formatNumber(toggled),
+        displayValue = formatNumber(toggled, state.localeFormat),
         overwriteDisplay = false,
         isError = false
     )
@@ -191,10 +222,17 @@ private fun backspace(state: CalculatorState): CalculatorState {
     return state.copy(displayValue = sanitized, overwriteDisplay = false)
 }
 
-private fun CalculatorState.reset(): CalculatorState = CalculatorState(memoryValue = memoryValue)
+private fun CalculatorState.reset(): CalculatorState = this.copy(
+    displayValue = "0",
+    previousExpression = "",
+    accumulator = null,
+    pendingOperation = null,
+    overwriteDisplay = true,
+    isError = false
+)
 
 private fun CalculatorState.withDisplay(value: Double): CalculatorState = copy(
-    displayValue = formatNumber(value),
+    displayValue = formatNumber(value, this.localeFormat),
     overwriteDisplay = true,
     isError = false
 )
@@ -241,6 +279,26 @@ private fun formatNumber(value: Double): String {
     }
 }
 
+private fun formatNumber(value: Double, style: NumberFormatStyle): String {
+    if (value.isNaN() || value.isInfinite()) return "Error"
+    val absValue = kotlin.math.abs(value)
+    if (absValue >= 1e100) return "Overflow"
+    val bigDecimal = BigDecimal.valueOf(value).setScale(8, RoundingMode.HALF_UP).stripTrailingZeros()
+    val plain = bigDecimal.toPlainString()
+    return try {
+        val absBd = bigDecimal.abs()
+        if (absBd >= BigDecimal("1e10") || (bigDecimal.compareTo(BigDecimal.ZERO) != 0 && absBd < BigDecimal("1e-4"))) {
+            val exp = String.format("%.6e", value).replace(" ", "")
+            if (exp.length <= MAX_DISPLAY_LENGTH) exp else exp.take(MAX_DISPLAY_LENGTH)
+        } else {
+            val formatted = formatForDisplay(plain, false, style)
+            if (formatted.length <= MAX_DISPLAY_LENGTH) formatted else formatted.take(MAX_DISPLAY_LENGTH)
+        }
+    } catch (e: Exception) {
+        if (plain.length <= MAX_DISPLAY_LENGTH) plain else plain.take(MAX_DISPLAY_LENGTH)
+    }
+}
+
 /**
  * Pure display-only formatter.
  * - `value`: locale-neutral numeric string (e.g. "1000000.22" or "1.23456e+15").
@@ -250,7 +308,7 @@ private fun formatNumber(value: Double): String {
  * and ',' as decimal separator. Scientific notation is left invariant (uses '.' decimal and 'e').
  * This function never mutates input and never throws.
  */
-private fun formatForDisplay(value: String, isScientific: Boolean): String {
+private fun formatForDisplay(value: String, isScientific: Boolean, style: NumberFormatStyle = NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA): String {
     try {
         val v = value.trim()
         if (v.equals("Error", true) || v.equals("Overflow", true)) return v
@@ -290,11 +348,19 @@ private fun formatForDisplay(value: String, isScientific: Boolean): String {
         val sign = if (intRaw.startsWith("-")) "-" else ""
         val digits = if (sign == "") intRaw else intRaw.substring(1)
 
-        // Group thousands with '.' (visual only)
-        val grouped = digits.replace(Regex("(\\d)(?=(\\d{3})+(?!\\d))"), "$1.")
+        // Group thousands and decimal separator according to style
+        val grouped = when (style) {
+            NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA -> digits.replace(Regex("(\\d)(?=(\\d{3})+(?!\\d))"), "$1.")
+            NumberFormatStyle.COMMA_GROUP_DECIMAL_DOT -> digits.replace(Regex("(\\d)(?=(\\d{3})+(?!\\d))"), "$1,")
+        }
         val intPart = sign + grouped
 
-        val decPart = if (parts.size > 1 && parts[1].isNotEmpty()) "," + parts[1] else ""
+        val decPart = if (parts.size > 1 && parts[1].isNotEmpty()) {
+            when (style) {
+                NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA -> "," + parts[1]
+                NumberFormatStyle.COMMA_GROUP_DECIMAL_DOT -> "." + parts[1]
+            }
+        } else ""
 
         return intPart + decPart
     } catch (e: Exception) {
@@ -302,7 +368,9 @@ private fun formatForDisplay(value: String, isScientific: Boolean): String {
     }
 }
 
-private fun String.toSafeDouble(): Double {
+private fun String.toSafeDouble(): Double = this.toSafeDouble(NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA)
+
+private fun String.toSafeDouble(style: NumberFormatStyle): Double {
     val raw = this.trim()
     if (raw.equals("Error", true) || raw.equals("Overflow", true)) return 0.0
 
@@ -321,16 +389,20 @@ private fun String.toSafeDouble(): Double {
         }
     }
 
-    // If string uses Portuguese formatting (contains ',') then normalize: remove grouping '.' and replace ',' with '.'
-    val normalized = when {
-        // Portuguese formatting: contains comma as decimal separator
-        raw.contains(',') -> raw.replace(".", "").replace(",", ".")
-        // If no comma but contains grouping dots like "10.900" (thousands grouped), remove dots
-        // Match examples: 1.000 or 10.900 or 1.234.567
-        Regex("^[-+]?\\d{1,3}(?:\\.\\d{3})+$").matches(raw) -> raw.replace(".", "")
-        else -> raw
+    // Normalize depending on style
+    val normalized = when (style) {
+        NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA -> when {
+            raw.contains(',') -> raw.replace(".", "").replace(",", ".")
+            Regex("^[-+]?\\d{1,3}(?:\\.\\d{3})+$").matches(raw) -> raw.replace(".", "")
+            else -> raw
+        }
+        NumberFormatStyle.COMMA_GROUP_DECIMAL_DOT -> when {
+            raw.contains('.') && raw.contains(',') -> raw.replace(",", "").replace(".", ".") // ambiguous but keep
+            raw.contains(',') -> raw.replace(",", "") // grouping commas -> remove
+            Regex("^[-+]?\\d{1,3}(?:,\\d{3})+$").matches(raw) -> raw.replace(",", "")
+            else -> raw
+        }
     }
 
-    // Try normal parse on normalized string
     return normalized.toDoubleOrNull() ?: 0.0
 }

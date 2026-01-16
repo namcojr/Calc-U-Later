@@ -5,6 +5,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import com.sunwings.calc_u_later.calculator.NumberFormatStyle
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -74,10 +77,10 @@ import com.sunwings.calc_u_later.ui.theme.LcdTextSecondary
 import com.sunwings.calc_u_later.ui.theme.adaptiveTypography
 
 @Composable
-fun CalculatorScreen(modifier: Modifier = Modifier) {
-        var state by rememberSaveable { mutableStateOf(CalculatorState()) }
+fun CalculatorScreen(modifier: Modifier = Modifier, initialFormat: com.sunwings.calc_u_later.calculator.NumberFormatStyle? = null, onFormatChange: ((com.sunwings.calc_u_later.calculator.NumberFormatStyle) -> Unit)? = null) {
+        var state by rememberSaveable { mutableStateOf(CalculatorState(localeFormat = initialFormat ?: CalculatorState().localeFormat)) }
 
-        val buttonRows = remember { calculatorButtons() }
+        val buttonRows = remember(state.localeFormat) { calculatorButtons(state.localeFormat) }
 
         Box(modifier = modifier.fillMaxSize()) {
                 Image(
@@ -112,7 +115,13 @@ fun CalculatorScreen(modifier: Modifier = Modifier) {
                                                         top = 42.dp
                                                 ) // Top padding from the top of the phone screen
                         ) {
-                                DisplayPanel(state = state)
+                                DisplayPanel(state = state) { action ->
+                                        val next = onCalculatorAction(state, action)
+                                        if (next.localeFormat != state.localeFormat) {
+                                                onFormatChange?.invoke(next.localeFormat)
+                                        }
+                                        state = next
+                                }
                                 ButtonGrid(buttonRows = buttonRows) { action ->
                                         state = onCalculatorAction(state, action)
                                 }
@@ -122,34 +131,39 @@ fun CalculatorScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) {
+private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier, onAction: (CalculatorAction) -> Unit = {}) {
+        // Long-press the display to toggle numeric formatting (grouping and decimal).
+        // The `onAction` callback receives the ToggleLocaleFormat action; the caller
+        // (CalculatorScreen) persists the updated preference when provided.
+        // Note: Toggle clears the current result/pending operation to avoid mismatches.
+        val lpModifier = modifier.pointerInput(Unit) {
+                detectTapGestures(onLongPress = {
+                        onAction(CalculatorAction.ToggleLocaleFormat)
+                })
+        }
+
         Surface(
-                modifier =
-                        modifier.fillMaxWidth()
-                                .heightIn(min = 180.dp)
-                                .shadow(
-                                        12.dp,
-                                        RoundedCornerShape(28.dp),
-                                        clip = false,
-                                        ambientColor = ButtonShadow,
-                                        spotColor = ButtonShadow
-                                ),
+                modifier = lpModifier.fillMaxWidth()
+                        .heightIn(min = 180.dp)
+                        .shadow(
+                                12.dp,
+                                RoundedCornerShape(28.dp),
+                                clip = false,
+                                ambientColor = ButtonShadow,
+                                spotColor = ButtonShadow
+                        ),
                 shape = RoundedCornerShape(28.dp),
                 color = Color.Transparent
         ) {
                 Column(
-                        modifier =
-                                Modifier.background(
-                                                Brush.verticalGradient(
-                                                        listOf(
-                                                                MaterialTheme.colorScheme.tertiary
-                                                                        .copy(alpha = 0.9f),
-                                                                MaterialTheme.colorScheme.tertiary
-                                                        )
-                                                )
+                        modifier = lpModifier.background(
+                                Brush.verticalGradient(
+                                        listOf(
+                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
+                                                MaterialTheme.colorScheme.tertiary
                                         )
-                                        .border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
-                                        .padding(horizontal = 8.dp, vertical = 24.dp),
+                                )
+                        ).border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp)).padding(horizontal = 8.dp, vertical = 24.dp),
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -158,12 +172,7 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) 
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.Top
                         ) {
-                                val memoryAlpha by
-                                        animateFloatAsState(
-                                                targetValue =
-                                                        if (state.memoryValue == 0.0) 0f else 1f,
-                                                label = "memoryIndicatorAlpha"
-                                        )
+                                val memoryAlpha by animateFloatAsState(targetValue = if (state.memoryValue == 0.0) 0f else 1f, label = "memoryIndicatorAlpha")
                                 Text(
                                         text = "M",
                                         style = MaterialTheme.typography.displayMedium,
@@ -173,55 +182,22 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) 
                                         overflow = TextOverflow.Clip
                                 )
                                 Box(modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp)) {
-                                        Column(
-                                                modifier =
-                                                        Modifier.align(Alignment.TopEnd)
-                                                                .height(120.dp),
-                                                horizontalAlignment = Alignment.End,
-                                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                                // Invisible measuring text always includes a
-                                                // trailing comma so the
-                                                // layout reserves space for descenders and the
-                                                // visible text won't jump.
+                                        Column(modifier = Modifier.align(Alignment.TopEnd).height(120.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                                 Box(modifier = Modifier.height(72.dp)) {
                                                         Text(
                                                                 text = state.displayValue + ",",
-                                                                style =
-                                                                        adaptiveTypography()
-                                                                                .displayLarge,
-                                                                color =
-                                                                        LcdTextPrimary.copy(
-                                                                                alpha = 0f
-                                                                        ),
+                                                                style = adaptiveTypography().displayLarge,
+                                                                color = LcdTextPrimary.copy(alpha = 0f),
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Clip,
-                                                                modifier =
-                                                                        Modifier.matchParentSize()
+                                                                modifier = Modifier.matchParentSize()
                                                         )
                                                         Text(
-                                                                text =
-                                                                        buildAnnotatedString {
-                                                                                append(
-                                                                                        state.displayValue
-                                                                                )
-                                                                                withStyle(
-                                                                                        SpanStyle(
-                                                                                                color =
-                                                                                                        Color.Transparent
-                                                                                        )
-                                                                                ) { append(",") }
-                                                                        },
-                                                                style =
-                                                                        adaptiveTypography()
-                                                                                .displayLarge
-                                                                                .copy(
-                                                                                        lineHeight =
-                                                                                                adaptiveTypography()
-                                                                                                        .displayLarge
-                                                                                                        .fontSize *
-                                                                                                        1.1f
-                                                                                ),
+                                                                text = buildAnnotatedString {
+                                                                        append(state.displayValue)
+                                                                        withStyle(SpanStyle(color = Color.Transparent)) { append(",") }
+                                                                },
+                                                                style = adaptiveTypography().displayLarge.copy(lineHeight = adaptiveTypography().displayLarge.fontSize * 1.1f),
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Clip
                                                         )
@@ -232,9 +208,7 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier) 
                                                         color = LcdTextSecondary,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Clip,
-                                                        modifier =
-                                                                Modifier.height(28.dp)
-                                                                        .padding(top = 12.dp)
+                                                        modifier = Modifier.height(28.dp).padding(top = 12.dp)
                                                 )
                                         }
                                 }
@@ -376,8 +350,13 @@ private fun ButtonRole.palette(): ButtonPalette =
                 ButtonRole.Equals -> ButtonPalette(ButtonEqualsTop, ButtonEqualsBottom, Color.White)
         }
 
-private fun calculatorButtons(): List<List<ButtonSpec>> =
-        listOf(
+private fun calculatorButtons(format: NumberFormatStyle): List<List<ButtonSpec>> =
+        run {
+                val decimal = when (format) {
+                        NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA -> ","
+                        NumberFormatStyle.COMMA_GROUP_DECIMAL_DOT -> "."
+                }
+                listOf(
                 listOf(
                         ButtonSpec("MC", ButtonRole.Memory, CalculatorAction.MemoryClear),
                         ButtonSpec("M+", ButtonRole.Memory, CalculatorAction.MemoryAdd),
@@ -427,10 +406,11 @@ private fun calculatorButtons(): List<List<ButtonSpec>> =
                 listOf(
                         ButtonSpec("DEL", ButtonRole.Function, CalculatorAction.Backspace),
                         ButtonSpec("0", ButtonRole.Numeric, CalculatorAction.Digit(0)),
-                        ButtonSpec(",", ButtonRole.Numeric, CalculatorAction.Decimal),
+                        ButtonSpec(decimal, ButtonRole.Numeric, CalculatorAction.Decimal),
                         ButtonSpec("=", ButtonRole.Equals, CalculatorAction.Equals)
                 )
         )
+        }
 
 private fun Color.adjust(multiplier: Float): Color {
         val r = (red * multiplier).coerceIn(0f, 1f)
