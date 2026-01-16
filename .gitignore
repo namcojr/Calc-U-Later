@@ -17,7 +17,7 @@ out/
 build/
 
 # Gradle files
-.gradle/
+/.gradle/
 build/
 
 # Local configuration file (sdk path, etc)
@@ -93,3 +93,33 @@ captures/
 
 # Exclude build generated metadata
 **/build/
+
+# Kotlin/Gradle/IDE extras
+.gradle/
+build/
+/.idea/
+/*.iml
+/*.ipr
+/*.iws
+
+# Kotlin daemon and caches
+/.gradle/
+/.kotlin/
+
+# IntelliJ
+out/
+
+# Android Studio
+captures/
+
+# Local env
+local.properties
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
