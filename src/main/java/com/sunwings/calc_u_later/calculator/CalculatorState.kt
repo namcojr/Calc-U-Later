@@ -314,9 +314,14 @@ private fun String.toSafeDouble(): Double {
     }
 
     // If string uses Portuguese formatting (contains ',') then normalize: remove grouping '.' and replace ',' with '.'
-    val normalized = if (raw.contains(',')) {
-        raw.replace(".", "").replace(",", ".")
-    } else raw
+    val normalized = when {
+        // Portuguese formatting: contains comma as decimal separator
+        raw.contains(',') -> raw.replace(".", "").replace(",", ".")
+        // If no comma but contains grouping dots like "10.900" (thousands grouped), remove dots
+        // Match examples: 1.000 or 10.900 or 1.234.567
+        Regex("^[-+]?\\d{1,3}(?:\\.\\d{3})+$").matches(raw) -> raw.replace(".", "")
+        else -> raw
+    }
 
     // Try normal parse on normalized string
     return normalized.toDoubleOrNull() ?: 0.0
