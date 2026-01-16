@@ -385,7 +385,7 @@ private fun calculatorButtons(): List<List<ButtonSpec>> =
                         ButtonSpec("MR", ButtonRole.Memory, CalculatorAction.MemoryRecall)
                 ),
                 listOf(
-                        ButtonSpec("C", ButtonRole.Clear, CalculatorAction.Clear),
+                        ButtonSpec("AC", ButtonRole.Clear, CalculatorAction.Clear),
                         ButtonSpec("%", ButtonRole.Function, CalculatorAction.Percent),
                         ButtonSpec("+/-", ButtonRole.Function, CalculatorAction.ToggleSign),
                         ButtonSpec(

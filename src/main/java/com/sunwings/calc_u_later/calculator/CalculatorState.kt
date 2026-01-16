@@ -7,6 +7,10 @@ import kotlin.math.abs
 
 // Display can show longer computed results; keep input digit limit separate
 private const val MAX_DISPLAY_LENGTH = 24
+// When showing the previous expression, if the left operand (formatted with grouping
+// and decimal separators) would exceed this visible length, replace it with the
+// literal "ans" to avoid UI clipping of the operator and right-hand operand.
+private const val LEFT_PREVIOUS_VISIBLE_LIMIT = 14
 private const val MAX_DIGITS_PER_NUMBER = 10
 
 data class CalculatorState(
@@ -114,22 +118,24 @@ private fun applyOperation(state: CalculatorState, operation: CalculatorOperatio
         val result = performBinaryOperation(state.accumulator, currentValue, state.pendingOperation)
             ?: return state.errorState()
         val formattedResult = formatNumber(result)
+        val leftForPrev = if (formatNumber(result).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(result)
         return state.copy(
             displayValue = formattedResult,
             accumulator = result,
             pendingOperation = operation,
             overwriteDisplay = true,
-            previousExpression = "${formatNumber(result)} ${operation.symbol}",
+            previousExpression = "$leftForPrev ${operation.symbol}",
             isError = false
         )
     }
 
     val baseValue = state.accumulator ?: currentValue
+    val leftForPrev = if (formatNumber(baseValue).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(baseValue)
     return state.copy(
         accumulator = baseValue,
         pendingOperation = operation,
         overwriteDisplay = true,
-        previousExpression = "${formatNumber(baseValue)} ${operation.symbol}",
+        previousExpression = "$leftForPrev ${operation.symbol}",
         isError = false
     )
 }
@@ -139,9 +145,11 @@ private fun evaluate(state: CalculatorState): CalculatorState {
     val accumulator = state.accumulator ?: return state
     val currentValue = state.displayValue.toSafeDouble()
     val result = performBinaryOperation(accumulator, currentValue, op) ?: return state.errorState()
+    val leftForPrev = if (formatNumber(accumulator).length > LEFT_PREVIOUS_VISIBLE_LIMIT) "ans" else formatNumber(accumulator)
+    val rightForPrev = formatNumber(currentValue)
     return state.copy(
         displayValue = formatNumber(result),
-        previousExpression = "${formatNumber(accumulator)} ${op.symbol} ${formatNumber(currentValue)} =",
+        previousExpression = "$leftForPrev ${op.symbol} $rightForPrev =",
         accumulator = null,
         pendingOperation = null,
         overwriteDisplay = true,
