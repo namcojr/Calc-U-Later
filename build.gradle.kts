@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.sunwings.calc_u_later"
-        minSdk = 35
+        minSdk = 29
         targetSdk = 35
         versionCode = 5
         versionName = "1.5"

@@ -27,6 +27,11 @@ A beautiful, realistic calculator app for Android, built with Jetpack Compose.
 - Android Studio (latest recommended)
 - Android SDK 24+
 
+### Supported Android versions
+- **Minimum supported Android:** Android 10 (API 29) — lowered from API 35. The app was built and assembled successfully with `minSdk` set to 29. Please test on Android 10, 11, 12, 13, and 14 devices/emulators to verify runtime behavior and feature parity.
+
+If you find runtime issues on older Android versions, report them and we can add API-level guards or compatibility fallbacks.
+
 ### Build & Run
 1. Clone this repository:
    ```sh
