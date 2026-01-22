@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import com.sunwings.calc_u_later.calculator.NumberFormatStyle
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -77,8 +79,19 @@ import com.sunwings.calc_u_later.ui.theme.LcdTextSecondary
 import com.sunwings.calc_u_later.ui.theme.adaptiveTypography
 
 @Composable
-fun CalculatorScreen(modifier: Modifier = Modifier, initialFormat: com.sunwings.calc_u_later.calculator.NumberFormatStyle? = null, onFormatChange: ((com.sunwings.calc_u_later.calculator.NumberFormatStyle) -> Unit)? = null) {
+fun CalculatorScreen(
+        modifier: Modifier = Modifier,
+        initialFormat: com.sunwings.calc_u_later.calculator.NumberFormatStyle? = null,
+        onFormatChange: ((com.sunwings.calc_u_later.calculator.NumberFormatStyle) -> Unit)? = null,
+        initialLcdIndex: Int? = null,
+        onLcdIndexChange: ((Int) -> Unit)? = null
+) {
         var state by rememberSaveable { mutableStateOf(CalculatorState(localeFormat = initialFormat ?: CalculatorState().localeFormat)) }
+
+        // LCD color cycling state: 0 = base (light blue), 1 = vintage green, 2 = amber
+        val lcdColors = listOf(com.sunwings.calc_u_later.ui.theme.LcdBase, com.sunwings.calc_u_later.ui.theme.LcdVintageGreen, com.sunwings.calc_u_later.ui.theme.LcdAmber)
+        var lcdIndex by rememberSaveable { mutableStateOf(initialLcdIndex ?: 0) }
+        val currentLcdColor = lcdColors[lcdIndex]
 
         val buttonRows = remember(state.localeFormat) { calculatorButtons(state.localeFormat) }
 
@@ -106,24 +119,57 @@ fun CalculatorScreen(modifier: Modifier = Modifier, initialFormat: com.sunwings.
                                         )
                                         .padding(horizontal = 24.dp, vertical = 36.dp)
                 ) {
-                        Column(
-                                verticalArrangement =
-                                        Arrangement.spacedBy(58.dp), // LCD to Button Grid spacing
-                                modifier =
-                                        Modifier.fillMaxSize()
-                                                .padding(
-                                                        top = 42.dp
-                                                ) // Top padding from the top of the phone screen
-                        ) {
-                                DisplayPanel(state = state) { action ->
-                                        val next = onCalculatorAction(state, action)
-                                        if (next.localeFormat != state.localeFormat) {
-                                                onFormatChange?.invoke(next.localeFormat)
+                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                                val baseWidth = 360.dp
+                                val baseHeight = 780.dp
+
+                                // Compute scale so UI doesn't grow larger than 1.0 on small devices,
+                                // but will shrink on tall/wide devices (tablets). We derive a
+                                // width scale and a height-based inverse scale and pick the
+                                // minimum to ensure the UI fits vertically.
+                                // Adjust `MIN_SCALE` here to change how much the UI may shrink
+                                // on tablet devices (e.g., 0.6 => shrink to 60% = 40% smaller).
+                                val MIN_SCALE = 0.5f
+                                val MAX_SCALE = 1.0f
+                                val scaleWidth = (maxWidth / baseWidth)
+                                val scaleHeight = (baseHeight / maxHeight)
+                                val scale = minOf(scaleWidth, scaleHeight).coerceIn(MIN_SCALE, MAX_SCALE)
+
+                                // Limit content width so button sizes derive from the scaled
+                                // container (instead of the full screen width). This keeps
+                                // buttons proportional when centered on tablets.
+                                val contentWidth = maxWidth * scale
+
+                                // Keep the LCD display at (or near) original size so its text
+                                // remains readable; only scale the button grid. You can tweak
+                                // `displayScale` if you want partial scaling of the display.
+                                val displayScale = 1.0f
+
+                                Column(
+                                        verticalArrangement = Arrangement.spacedBy(58.dp * scale),
+                                        modifier = Modifier.fillMaxSize().padding(top = 42.dp * scale)
+                                ) {
+                                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                                                Column(
+                                                        modifier = Modifier.width(contentWidth).fillMaxHeight(),
+                                                        verticalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                                DisplayPanel(state = state, modifier = Modifier.fillMaxWidth(), scale = displayScale, lcdColor = currentLcdColor, onCycle = { delta ->
+                                                                        val next = (lcdIndex + delta + lcdColors.size) % lcdColors.size
+                                                                        lcdIndex = next
+                                                                        onLcdIndexChange?.invoke(next)
+                                                                }) { action ->
+                                                                        val next = onCalculatorAction(state, action)
+                                                                        if (next.localeFormat != state.localeFormat) {
+                                                                                onFormatChange?.invoke(next.localeFormat)
+                                                                        }
+                                                                        state = next
+                                                                }
+                                                                ButtonGrid(buttonRows = buttonRows, modifier = Modifier.fillMaxWidth(), scale = scale) { action ->
+                                                                        state = onCalculatorAction(state, action)
+                                                                }
+                                                        }
                                         }
-                                        state = next
-                                }
-                                ButtonGrid(buttonRows = buttonRows) { action ->
-                                        state = onCalculatorAction(state, action)
                                 }
                         }
                 }
@@ -131,22 +177,49 @@ fun CalculatorScreen(modifier: Modifier = Modifier, initialFormat: com.sunwings.
 }
 
 @Composable
-private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier, onAction: (CalculatorAction) -> Unit = {}) {
+private fun DisplayPanel(
+        state: CalculatorState,
+        modifier: Modifier = Modifier,
+        scale: Float = 1f,
+        lcdColor: Color = MaterialTheme.colorScheme.tertiary,
+        onCycle: (Int) -> Unit = {},
+        onAction: (CalculatorAction) -> Unit = {}
+) {
         // Long-press the display to toggle numeric formatting (grouping and decimal).
         // The `onAction` callback receives the ToggleLocaleFormat action; the caller
         // (CalculatorScreen) persists the updated preference when provided.
         // Note: Toggle clears the current result/pending operation to avoid mismatches.
-        val lpModifier = modifier.pointerInput(Unit) {
-                detectTapGestures(onLongPress = {
-                        onAction(CalculatorAction.ToggleLocaleFormat)
-                })
-        }
+        val lpModifier = modifier
+                .pointerInput(Unit) {
+                        detectTapGestures(onLongPress = {
+                                onAction(CalculatorAction.ToggleLocaleFormat)
+                        })
+                }
+                .pointerInput(Unit) {
+                        var totalDrag = 0f
+                        detectDragGestures(
+                                onDrag = { _ , dragAmount ->
+                                        totalDrag += dragAmount.x
+                                },
+                                onDragEnd = {
+                                        if (kotlin.math.abs(totalDrag) > 120f) {
+                                                // swipe left -> advance colors (direction = +1)
+                                                // swipe right -> previous color (direction = -1)
+                                                if (totalDrag > 0f) onCycle(-1) else onCycle(1)
+                                        }
+                                        totalDrag = 0f
+                                },
+                                onDragCancel = {
+                                        totalDrag = 0f
+                                }
+                        )
+                }
 
         Surface(
                 modifier = lpModifier.fillMaxWidth()
-                        .heightIn(min = 180.dp)
+                        .heightIn(min = 180.dp * scale)
                         .shadow(
-                                12.dp,
+                                12.dp * scale,
                                 RoundedCornerShape(28.dp),
                                 clip = false,
                                 ambientColor = ButtonShadow,
@@ -159,16 +232,16 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier, 
                         modifier = lpModifier.background(
                                 Brush.verticalGradient(
                                         listOf(
-                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
-                                                MaterialTheme.colorScheme.tertiary
+                                                lcdColor.copy(alpha = 0.9f),
+                                                lcdColor
                                         )
                                 )
-                        ).border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp)).padding(horizontal = 8.dp, vertical = 24.dp),
+                        ).border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp)).padding(horizontal = 8.dp * scale, vertical = 24.dp * scale),
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                        Row(
-                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp * scale),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.Top
                         ) {
@@ -181,9 +254,9 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier, 
                                         maxLines = 1,
                                         overflow = TextOverflow.Clip
                                 )
-                                Box(modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp)) {
-                                        Column(modifier = Modifier.align(Alignment.TopEnd).height(120.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                Box(modifier = Modifier.height(72.dp)) {
+                                Box(modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp * scale)) {
+                                        Column(modifier = Modifier.align(Alignment.TopEnd).height(120.dp * scale), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp * scale)) {
+                                                Box(modifier = Modifier.height(72.dp * scale)) {
                                                         Text(
                                                                 text = state.displayValue + ",",
                                                                 style = adaptiveTypography().displayLarge,
@@ -208,7 +281,7 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier, 
                                                         color = LcdTextSecondary,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Clip,
-                                                        modifier = Modifier.height(28.dp).padding(top = 12.dp)
+                                                        modifier = Modifier.height(28.dp * scale).padding(top = 12.dp * scale)
                                                 )
                                         }
                                 }
@@ -221,10 +294,11 @@ private fun DisplayPanel(state: CalculatorState, modifier: Modifier = Modifier, 
 private fun ButtonGrid(
         buttonRows: List<List<ButtonSpec>>,
         modifier: Modifier = Modifier,
+        scale: Float = 1f,
         onAction: (CalculatorAction) -> Unit
 ) {
         BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-                val spacing = 14.dp
+                val spacing = 14.dp * scale
                 val buttonSize = (maxWidth - spacing * 3) / 4
                 Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                         buttonRows.forEachIndexed { index, row ->

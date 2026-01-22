@@ -17,6 +17,9 @@ val LcdTextSecondary = Color(0x66111111)
 // Vintage LCD green suggestion (more green, a bit warm):
 val LcdVintageGreen = Color(0xFF77AA44)
 
+// Amber LCD suggestion (warm amber/yellow tone)
+// Slightly lighter amber for a realistic vintage LCD tone
+val LcdAmber = Color(0xFFFFB84D)
 val ButtonNumericTop = Color(0xFFF6F0E3)
 val ButtonNumericBottom = Color(0xFFE5DCCB)
 

@@ -12,6 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.sunwings.calc_u_later.ui.CalculatorScreen
 import com.sunwings.calc_u_later.ui.theme.CalcULaterTheme
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
                 val ctx = LocalContext.current
                 val ds = ctx.dataStore
                 val prefsKey = stringPreferencesKey("locale_format")
+                val lcdKey = intPreferencesKey("lcd_color_index")
                 val scope = rememberCoroutineScope()
 
                 val initialFormat by produceState(initialValue = NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA, key1 = ds) {
@@ -41,13 +43,35 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                CalculatorScreen(initialFormat = initialFormat) { newFormat ->
-                    scope.launch {
-                        ds.edit { settings ->
-                            settings[prefsKey] = newFormat.name
-                        }
+                val initialLcdIndex by produceState(initialValue = 0, key1 = ds) {
+                    val prefs = ds.data.first()
+                    val saved = prefs[lcdKey]
+                    value = when {
+                        saved == null -> 0
+                        saved < 0 -> 0
+                        saved > 2 -> 0
+                        else -> saved
                     }
                 }
+
+                CalculatorScreen(
+                    initialFormat = initialFormat,
+                    onFormatChange = { newFormat ->
+                        scope.launch {
+                            ds.edit { settings ->
+                                settings[prefsKey] = newFormat.name
+                            }
+                        }
+                    },
+                    initialLcdIndex = initialLcdIndex,
+                    onLcdIndexChange = { newIndex ->
+                        scope.launch {
+                            ds.edit { settings ->
+                                settings[lcdKey] = newIndex
+                            }
+                        }
+                    }
+                )
             }
         }
     }
