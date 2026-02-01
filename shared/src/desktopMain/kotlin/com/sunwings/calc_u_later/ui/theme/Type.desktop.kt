@@ -1,3 +1,5 @@
+@file:Suppress("EXPERIMENTAL_API_USAGE")
+
 package com.sunwings.calc_u_later.ui.theme
 
 import androidx.compose.ui.text.font.FontFamily
@@ -52,11 +54,18 @@ private fun loadFontFromResources(fontName: String, fallbackPaths: List<String>)
     val registeredFamilyName = registeredFonts[fontName]
     if (registeredFamilyName != null) {
         System.err.println("✓ Using registered font family: $fontName → $registeredFamilyName")
-        // For now, use the monospace for LCD fonts since they're registered
-        return when {
-            fontName.contains("led_") -> FontFamily.Monospace
-            fontName.contains("DejaVu") -> FontFamily.SansSerif
-            else -> FontFamily.SansSerif
+        // Use reflection to avoid experimental API at compile time
+        return try {
+            val fontFamilyClass = Class.forName("androidx.compose.ui.text.font.FontFamily")
+            val constructor = fontFamilyClass.getConstructor(String::class.java)
+            constructor.newInstance(registeredFamilyName) as FontFamily
+        } catch (e: Exception) {
+            System.err.println("Could not create FontFamily via reflection: ${e.message}")
+            when {
+                fontName.contains("led_") -> FontFamily.Monospace
+                fontName.contains("DejaVu") -> FontFamily.SansSerif
+                else -> FontFamily.SansSerif
+            }
         }
     }
     
