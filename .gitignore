@@ -48,6 +48,27 @@ signingConfigs/
 # Mac
 .DS_Store
 
+# Binary files - fonts, icons, profiling
+*.ttf
+*.ttc
+*.otf
+*.png
+*.icns
+*.hprof
+*.heap
+
+# Generated documentation
+DISTRIBUTION_READY.txt
+FONTS_INSTALLATION.md
+KMP_DOCS_INDEX.md
+KMP_MIGRATION.md
+LINUX_SETUP.md
+PACKAGING.md
+PACKAGING_COMPLETE.md
+QUICKSTART.md
+SETUP_SUMMARY.txt
+VERIFICATION_CHECKLIST.md
+
 # VS Code
 .vscode/
 

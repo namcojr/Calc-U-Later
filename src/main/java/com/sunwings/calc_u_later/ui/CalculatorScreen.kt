@@ -5,10 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import com.sunwings.calc_u_later.calculator.NumberFormatStyle
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -16,9 +14,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -43,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -56,6 +55,7 @@ import com.sunwings.calc_u_later.R
 import com.sunwings.calc_u_later.calculator.CalculatorAction
 import com.sunwings.calc_u_later.calculator.CalculatorOperation
 import com.sunwings.calc_u_later.calculator.CalculatorState
+import com.sunwings.calc_u_later.calculator.NumberFormatStyle
 import com.sunwings.calc_u_later.calculator.onCalculatorAction
 import com.sunwings.calc_u_later.ui.theme.BaseText
 import com.sunwings.calc_u_later.ui.theme.ButtonBorder
@@ -86,10 +86,21 @@ fun CalculatorScreen(
         initialLcdIndex: Int? = null,
         onLcdIndexChange: ((Int) -> Unit)? = null
 ) {
-        var state by rememberSaveable { mutableStateOf(CalculatorState(localeFormat = initialFormat ?: CalculatorState().localeFormat)) }
+        var state by rememberSaveable {
+                mutableStateOf(
+                        CalculatorState(
+                                localeFormat = initialFormat ?: CalculatorState().localeFormat
+                        )
+                )
+        }
 
         // LCD color cycling state: 0 = base (light blue), 1 = vintage green, 2 = amber
-        val lcdColors = listOf(com.sunwings.calc_u_later.ui.theme.LcdBase, com.sunwings.calc_u_later.ui.theme.LcdVintageGreen, com.sunwings.calc_u_later.ui.theme.LcdAmber)
+        val lcdColors =
+                listOf(
+                        com.sunwings.calc_u_later.ui.theme.LcdBase,
+                        com.sunwings.calc_u_later.ui.theme.LcdVintageGreen,
+                        com.sunwings.calc_u_later.ui.theme.LcdAmber
+                )
         var lcdIndex by rememberSaveable { mutableStateOf(initialLcdIndex ?: 0) }
         val currentLcdColor = lcdColors[lcdIndex]
 
@@ -123,7 +134,8 @@ fun CalculatorScreen(
                                 val baseWidth = 360.dp
                                 val baseHeight = 780.dp
 
-                                // Compute scale so UI doesn't grow larger than 1.0 on small devices,
+                                // Compute scale so UI doesn't grow larger than 1.0 on small
+                                // devices,
                                 // but will shrink on tall/wide devices (tablets). We derive a
                                 // width scale and a height-based inverse scale and pick the
                                 // minimum to ensure the UI fits vertically.
@@ -133,7 +145,9 @@ fun CalculatorScreen(
                                 val MAX_SCALE = 1.0f
                                 val scaleWidth = (maxWidth / baseWidth)
                                 val scaleHeight = (baseHeight / maxHeight)
-                                val scale = minOf(scaleWidth, scaleHeight).coerceIn(MIN_SCALE, MAX_SCALE)
+                                val scale =
+                                        minOf(scaleWidth, scaleHeight)
+                                                .coerceIn(MIN_SCALE, MAX_SCALE)
 
                                 // Limit content width so button sizes derive from the scaled
                                 // container (instead of the full screen width). This keeps
@@ -147,28 +161,65 @@ fun CalculatorScreen(
 
                                 Column(
                                         verticalArrangement = Arrangement.spacedBy(58.dp * scale),
-                                        modifier = Modifier.fillMaxSize().padding(top = 42.dp * scale)
+                                        modifier =
+                                                Modifier.fillMaxSize().padding(top = 42.dp * scale)
                                 ) {
-                                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                                        Box(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.TopCenter
+                                        ) {
                                                 Column(
-                                                        modifier = Modifier.width(contentWidth).fillMaxHeight(),
-                                                        verticalArrangement = Arrangement.SpaceBetween
+                                                        modifier =
+                                                                Modifier.width(contentWidth)
+                                                                        .fillMaxHeight(),
+                                                        verticalArrangement =
+                                                                Arrangement.SpaceBetween
                                                 ) {
-                                                                DisplayPanel(state = state, modifier = Modifier.fillMaxWidth(), scale = displayScale, lcdColor = currentLcdColor, onCycle = { delta ->
-                                                                        val next = (lcdIndex + delta + lcdColors.size) % lcdColors.size
+                                                        DisplayPanel(
+                                                                state = state,
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                scale = displayScale,
+                                                                lcdColor = currentLcdColor,
+                                                                onCycle = { delta ->
+                                                                        val next =
+                                                                                (lcdIndex +
+                                                                                        delta +
+                                                                                        lcdColors
+                                                                                                .size) %
+                                                                                        lcdColors
+                                                                                                .size
                                                                         lcdIndex = next
-                                                                        onLcdIndexChange?.invoke(next)
-                                                                }) { action ->
-                                                                        val next = onCalculatorAction(state, action)
-                                                                        if (next.localeFormat != state.localeFormat) {
-                                                                                onFormatChange?.invoke(next.localeFormat)
-                                                                        }
-                                                                        state = next
+                                                                        onLcdIndexChange?.invoke(
+                                                                                next
+                                                                        )
                                                                 }
-                                                                ButtonGrid(buttonRows = buttonRows, modifier = Modifier.fillMaxWidth(), scale = scale) { action ->
-                                                                        state = onCalculatorAction(state, action)
+                                                        ) { action ->
+                                                                val next =
+                                                                        onCalculatorAction(
+                                                                                state,
+                                                                                action
+                                                                        )
+                                                                if (next.localeFormat !=
+                                                                                state.localeFormat
+                                                                ) {
+                                                                        onFormatChange?.invoke(
+                                                                                next.localeFormat
+                                                                        )
                                                                 }
+                                                                state = next
                                                         }
+                                                        ButtonGrid(
+                                                                buttonRows = buttonRows,
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                scale = scale
+                                                        ) { action ->
+                                                                state =
+                                                                        onCalculatorAction(
+                                                                                state,
+                                                                                action
+                                                                        )
+                                                        }
+                                                }
                                         }
                                 }
                         }
@@ -189,63 +240,79 @@ private fun DisplayPanel(
         // The `onAction` callback receives the ToggleLocaleFormat action; the caller
         // (CalculatorScreen) persists the updated preference when provided.
         // Note: Toggle clears the current result/pending operation to avoid mismatches.
-        val lpModifier = modifier
-                .pointerInput(Unit) {
-                        detectTapGestures(onLongPress = {
-                                onAction(CalculatorAction.ToggleLocaleFormat)
-                        })
-                }
-                .pointerInput(Unit) {
-                        var totalDrag = 0f
-                        detectDragGestures(
-                                onDrag = { _ , dragAmount ->
-                                        totalDrag += dragAmount.x
-                                },
-                                onDragEnd = {
-                                        if (kotlin.math.abs(totalDrag) > 120f) {
-                                                // swipe left -> advance colors (direction = +1)
-                                                // swipe right -> previous color (direction = -1)
-                                                if (totalDrag > 0f) onCycle(-1) else onCycle(1)
+        val lpModifier =
+                modifier
+                        .pointerInput(Unit) {
+                                detectTapGestures(
+                                        onLongPress = {
+                                                onAction(CalculatorAction.ToggleLocaleFormat)
                                         }
-                                        totalDrag = 0f
-                                },
-                                onDragCancel = {
-                                        totalDrag = 0f
-                                }
-                        )
-                }
+                                )
+                        }
+                        .pointerInput(Unit) {
+                                var totalDrag = 0f
+                                detectDragGestures(
+                                        onDrag = { _, dragAmount -> totalDrag += dragAmount.x },
+                                        onDragEnd = {
+                                                if (kotlin.math.abs(totalDrag) > 120f) {
+                                                        // swipe left -> advance colors (direction =
+                                                        // +1)
+                                                        // swipe right -> previous color (direction
+                                                        // = -1)
+                                                        if (totalDrag > 0f) onCycle(-1)
+                                                        else onCycle(1)
+                                                }
+                                                totalDrag = 0f
+                                        },
+                                        onDragCancel = { totalDrag = 0f }
+                                )
+                        }
 
         Surface(
-                modifier = lpModifier.fillMaxWidth()
-                        .heightIn(min = 180.dp * scale)
-                        .shadow(
-                                12.dp * scale,
-                                RoundedCornerShape(28.dp),
-                                clip = false,
-                                ambientColor = ButtonShadow,
-                                spotColor = ButtonShadow
-                        ),
+                modifier =
+                        lpModifier
+                                .fillMaxWidth()
+                                .heightIn(min = 180.dp * scale)
+                                .shadow(
+                                        12.dp * scale,
+                                        RoundedCornerShape(28.dp),
+                                        clip = false,
+                                        ambientColor = ButtonShadow,
+                                        spotColor = ButtonShadow
+                                ),
                 shape = RoundedCornerShape(28.dp),
                 color = Color.Transparent
         ) {
                 Column(
-                        modifier = lpModifier.background(
-                                Brush.verticalGradient(
-                                        listOf(
-                                                lcdColor.copy(alpha = 0.9f),
-                                                lcdColor
+                        modifier =
+                                lpModifier
+                                        .background(
+                                                Brush.verticalGradient(
+                                                        listOf(
+                                                                lcdColor.copy(alpha = 0.9f),
+                                                                lcdColor
+                                                        )
+                                                )
                                         )
-                                )
-                        ).border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp)).padding(horizontal = 8.dp * scale, vertical = 24.dp * scale),
+                                        .border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp))
+                                        .padding(
+                                                horizontal = 8.dp * scale,
+                                                vertical = 24.dp * scale
+                                        ),
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                                Row(
+                        Row(
                                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp * scale),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.Top
                         ) {
-                                val memoryAlpha by animateFloatAsState(targetValue = if (state.memoryValue == 0.0) 0f else 1f, label = "memoryIndicatorAlpha")
+                                val memoryAlpha by
+                                        animateFloatAsState(
+                                                targetValue =
+                                                        if (state.memoryValue == 0.0) 0f else 1f,
+                                                label = "memoryIndicatorAlpha"
+                                        )
                                 Text(
                                         text = "M",
                                         style = MaterialTheme.typography.displayMedium,
@@ -254,23 +321,57 @@ private fun DisplayPanel(
                                         maxLines = 1,
                                         overflow = TextOverflow.Clip
                                 )
-                                Box(modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp * scale)) {
-                                        Column(modifier = Modifier.align(Alignment.TopEnd).height(120.dp * scale), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp * scale)) {
+                                Box(
+                                        modifier =
+                                                Modifier.fillMaxWidth()
+                                                        .heightIn(min = 96.dp * scale)
+                                ) {
+                                        Column(
+                                                modifier =
+                                                        Modifier.align(Alignment.TopEnd)
+                                                                .height(120.dp * scale),
+                                                horizontalAlignment = Alignment.End,
+                                                verticalArrangement =
+                                                        Arrangement.spacedBy(6.dp * scale)
+                                        ) {
                                                 Box(modifier = Modifier.height(72.dp * scale)) {
                                                         Text(
                                                                 text = state.displayValue + ",",
-                                                                style = adaptiveTypography().displayLarge,
-                                                                color = LcdTextPrimary.copy(alpha = 0f),
+                                                                style =
+                                                                        adaptiveTypography()
+                                                                                .displayLarge,
+                                                                color =
+                                                                        LcdTextPrimary.copy(
+                                                                                alpha = 0f
+                                                                        ),
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Clip,
-                                                                modifier = Modifier.matchParentSize()
+                                                                modifier =
+                                                                        Modifier.matchParentSize()
                                                         )
                                                         Text(
-                                                                text = buildAnnotatedString {
-                                                                        append(state.displayValue)
-                                                                        withStyle(SpanStyle(color = Color.Transparent)) { append(",") }
-                                                                },
-                                                                style = adaptiveTypography().displayLarge.copy(lineHeight = adaptiveTypography().displayLarge.fontSize * 1.1f),
+                                                                text =
+                                                                        buildAnnotatedString {
+                                                                                append(
+                                                                                        state.displayValue
+                                                                                )
+                                                                                withStyle(
+                                                                                        SpanStyle(
+                                                                                                color =
+                                                                                                        Color.Transparent
+                                                                                        )
+                                                                                ) { append(",") }
+                                                                        },
+                                                                style =
+                                                                        adaptiveTypography()
+                                                                                .displayLarge
+                                                                                .copy(
+                                                                                        lineHeight =
+                                                                                                adaptiveTypography()
+                                                                                                        .displayLarge
+                                                                                                        .fontSize *
+                                                                                                        1.1f
+                                                                                ),
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Clip
                                                         )
@@ -281,7 +382,11 @@ private fun DisplayPanel(
                                                         color = LcdTextSecondary,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Clip,
-                                                        modifier = Modifier.height(28.dp * scale).padding(top = 12.dp * scale)
+                                                        modifier =
+                                                                Modifier.height(28.dp * scale)
+                                                                        .padding(
+                                                                                top = 12.dp * scale
+                                                                        )
                                                 )
                                         }
                                 }
@@ -424,13 +529,13 @@ private fun ButtonRole.palette(): ButtonPalette =
                 ButtonRole.Equals -> ButtonPalette(ButtonEqualsTop, ButtonEqualsBottom, Color.White)
         }
 
-private fun calculatorButtons(format: NumberFormatStyle): List<List<ButtonSpec>> =
-        run {
-                val decimal = when (format) {
+private fun calculatorButtons(format: NumberFormatStyle): List<List<ButtonSpec>> = run {
+        val decimal =
+                when (format) {
                         NumberFormatStyle.DOT_GROUP_DECIMAL_COMMA -> ","
                         NumberFormatStyle.COMMA_GROUP_DECIMAL_DOT -> "."
                 }
-                listOf(
+        listOf(
                 listOf(
                         ButtonSpec("MC", ButtonRole.Memory, CalculatorAction.MemoryClear),
                         ButtonSpec("M+", ButtonRole.Memory, CalculatorAction.MemoryAdd),
@@ -484,7 +589,7 @@ private fun calculatorButtons(format: NumberFormatStyle): List<List<ButtonSpec>>
                         ButtonSpec("=", ButtonRole.Equals, CalculatorAction.Equals)
                 )
         )
-        }
+}
 
 private fun Color.adjust(multiplier: Float): Color {
         val r = (red * multiplier).coerceIn(0f, 1f)

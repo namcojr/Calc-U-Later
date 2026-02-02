@@ -1,20 +1,18 @@
-@file:Suppress("EXPERIMENTAL_API_USAGE")
-
 package com.sunwings.calc_u_later.ui.theme
 
 import androidx.compose.ui.text.font.FontFamily
-import java.awt.Font
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.platform.Font as DesktopFont
+import java.awt.Font as AwtFont
 import java.awt.GraphicsEnvironment
 import java.io.File
 
 /**
- * Desktop implementation: Uses system-wide installed fonts
+ * Desktop implementation: Uses fonts embedded in resources and system-installed fonts
  * 
- * For best results, install fonts to your system:
- * Linux: sudo cp led_*.ttf DejaVu*.ttf /usr/share/fonts/
- *        sudo fc-cache -f
- * 
- * Or fonts are auto-extracted to ~/.calc_u_later/fonts/
+ * Fonts are loaded from desktopApp/src/desktopMain/resources/fonts/
+ * On first run, FontSetup extracts them to ~/.calc_u_later/fonts/
  */
 
 // Font family names (extracted from registered TTF files)
@@ -31,7 +29,7 @@ private val fontsRegistered by lazy {
             val fontFile = File("$userFontsDir/$fontName")
             if (fontFile.exists()) {
                 try {
-                    val font = Font.createFont(Font.TRUETYPE_FONT, fontFile)
+                    val font = AwtFont.createFont(AwtFont.TRUETYPE_FONT, fontFile)
                     ge.registerFont(font)
                     registeredFonts[fontName] = font.family  // Store the family name
                     System.err.println("✓ Registered font: $fontName (family: ${font.family}, name: ${font.name})")
@@ -46,47 +44,50 @@ private val fontsRegistered by lazy {
     true
 }
 
+private fun loadFontFromFile(fontPath: String): FontFamily? {
+    return try {
+        val file = File(fontPath)
+        if (file.exists()) {
+            // Register with AWT first (for system-wide availability)
+            val awtFont = AwtFont.createFont(AwtFont.TRUETYPE_FONT, file)
+            
+            // Load for Compose Desktop using the File constructor
+            FontFamily(DesktopFont(file, FontWeight.Normal, FontStyle.Normal))
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        System.err.println("Could not load font from $fontPath: ${e.message}")
+        null
+    }
+}
+
 private fun loadFontFromResources(fontName: String, fallbackPaths: List<String>): FontFamily {
     // Ensure fonts are registered first
     val unused = fontsRegistered
     
-    // Try to use registered font family name
-    val registeredFamilyName = registeredFonts[fontName]
-    if (registeredFamilyName != null) {
-        System.err.println("✓ Using registered font family: $fontName → $registeredFamilyName")
-        // Use reflection to avoid experimental API at compile time
-        return try {
-            val fontFamilyClass = Class.forName("androidx.compose.ui.text.font.FontFamily")
-            val constructor = fontFamilyClass.getConstructor(String::class.java)
-            constructor.newInstance(registeredFamilyName) as FontFamily
-        } catch (e: Exception) {
-            System.err.println("Could not create FontFamily via reflection: ${e.message}")
-            when {
-                fontName.contains("led_") -> FontFamily.Monospace
-                fontName.contains("DejaVu") -> FontFamily.SansSerif
-                else -> FontFamily.SansSerif
-            }
+    // Try to load font from file using Compose Desktop's Font API
+    val userFontsDir = "${System.getProperty("user.home")}/.calc_u_later/fonts"
+    val userFontPath = "$userFontsDir/$fontName"
+    
+    loadFontFromFile(userFontPath)?.let {
+        System.err.println("✓ Loaded font from file: $fontName")
+        return it
+    }
+    
+    // Try system paths
+    for (path in fallbackPaths) {
+        loadFontFromFile(path)?.let {
+            System.err.println("✓ Loaded font from system: $path")
+            return it
         }
     }
     
-    // Fallback based on font type
+    // Fallback to system fonts
+    System.err.println("⚠ Using fallback font for: $fontName")
     return when (fontName) {
-        "led_dot_matrix.ttf", "led_italic.ttf" -> {
-            System.err.println("⚠ LCD font not registered, using fallback Monospace for: $fontName")
-            FontFamily.Monospace
-        }
-        "DejaVuSans.ttf" -> {
-            System.err.println("ℹ Using SansSerif for DejaVuSans")
-            FontFamily.SansSerif
-        }
-        "DejaVuSans-Bold.ttf" -> {
-            System.err.println("ℹ Using SansSerif for DejaVuSans-Bold")
-            FontFamily.SansSerif
-        }
-        else -> {
-            System.err.println("⚠ Unknown font: $fontName, using SansSerif fallback")
-            FontFamily.SansSerif
-        }
+        "led_dot_matrix.ttf", "led_italic.ttf" -> FontFamily.Monospace
+        else -> FontFamily.SansSerif
     }
 }
 

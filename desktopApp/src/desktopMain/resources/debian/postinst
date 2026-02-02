@@ -1,0 +1,24 @@
+#!/bin/bash
+# Post-installation script for Calc-U-Later
+# Installs LCD fonts to system directory
+
+set -e
+
+# Create font directory
+mkdir -p /usr/share/fonts/calc-u-later
+
+# Copy LCD fonts from app directory to system fonts directory
+if [ -d "/opt/calc-u-later/lib/resources/fonts" ]; then
+    cp /opt/calc-u-later/lib/resources/fonts/led_*.ttf /usr/share/fonts/calc-u-later/ 2>/dev/null || true
+fi
+
+# Also copy fonts to user directory as fallback
+mkdir -p ~/.calc_u_later/fonts
+if [ -d "/opt/calc-u-later/lib/resources/fonts" ]; then
+    cp /opt/calc-u-later/lib/resources/fonts/*.ttf ~/.calc_u_later/fonts/ 2>/dev/null || true
+fi
+
+# Rebuild font cache
+fc-cache -f /usr/share/fonts/calc-u-later 2>/dev/null || true
+
+exit 0

@@ -1,4 +1,5 @@
 import org.gradle.api.initialization.resolve.RepositoriesMode
+
 pluginManagement {
 	repositories {
 		google()
@@ -16,3 +17,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Calc-U-Later"
+
+include(":shared")
+include(":androidApp")
+include(":desktopApp")
