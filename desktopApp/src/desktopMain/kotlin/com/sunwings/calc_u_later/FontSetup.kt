@@ -77,7 +77,7 @@ object FontSetup {
     private fun tryInstallSystemFonts(sourceDir: File) {
         try {
             // Only try on Linux with fontconfig available
-            val os = System.getProperty("os.name").toLowerCase()
+            val os = System.getProperty("os.name").lowercase()
             if (!os.contains("linux")) {
                 return
             }
