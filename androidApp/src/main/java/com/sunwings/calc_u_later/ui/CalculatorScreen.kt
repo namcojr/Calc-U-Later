@@ -123,7 +123,7 @@ fun CalculatorScreen(
                                         .padding(horizontal = 24.dp, vertical = 36.dp)
                 ) {
                         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                                val baseWidth = 330.dp
+                                val baseWidth = 350.dp
                                 val baseHeight = 780.dp
 
                                 // Compute scale so UI doesn't grow larger than 1.0 on small devices,
