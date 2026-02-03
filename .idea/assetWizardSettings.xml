@@ -24,7 +24,7 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="/tmp/ic_android_black_24dp.xml" />
+                                                <entry key="imagePath" value="/private/var/folders/g8/9g_133tj7mdb4x_395bdlf7r0000gn/T/ic_android_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -67,7 +67,7 @@
                                           <PersistentState>
                                             <option name="values">
                                               <map>
-                                                <entry key="imagePath" value="/tmp/ic_android_black_24dp.xml" />
+                                                <entry key="imagePath" value="/private/var/folders/g8/9g_133tj7mdb4x_395bdlf7r0000gn/T/ic_android_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -79,8 +79,8 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="/media/namco/Data/Downloads/calculator-computer-icons-ios-7-ios-10-calculator-e12cce91d2a452be86b6f8f76a7e7cc4.png" />
-                                                <entry key="scalingPercent" value="54" />
+                                                <entry key="imagePath" value="$PROJECT_DIR$/desktopApp/src/desktopMain/resources/icon.png" />
+                                                <entry key="scalingPercent" value="74" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -130,7 +130,7 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="/tmp/ic_android_black_24dp.xml" />
+                                                <entry key="imagePath" value="/private/var/folders/g8/9g_133tj7mdb4x_395bdlf7r0000gn/T/ic_android_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -174,7 +174,7 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="/tmp/ic_android_black_24dp.xml" />
+                                                <entry key="imagePath" value="/private/var/folders/g8/9g_133tj7mdb4x_395bdlf7r0000gn/T/ic_android_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -238,7 +238,7 @@
                                           <PersistentState>
                                             <option name="values">
                                               <map>
-                                                <entry key="imagePath" value="/tmp/ic_android_black_24dp.xml" />
+                                                <entry key="imagePath" value="/private/var/folders/g8/9g_133tj7mdb4x_395bdlf7r0000gn/T/ic_android_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>

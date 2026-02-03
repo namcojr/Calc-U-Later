@@ -112,19 +112,36 @@ fun CalculatorScreen(
                         )
                     )
                 )
-                .padding(horizontal = 24.dp, vertical = 36.dp)
+                .drawBehind {
+                    // Add brushed aluminum texture to calculator body
+                    val aluminumGradient = Brush.verticalGradient(
+                        listOf(
+                            Color(0xFFE8E8E8),  // Light metallic
+                            Color(0xFFD0D0D0),  // Mid tone
+                            Color(0xFFC0C0C0)   // Darker metallic
+                        )
+                    )
+                    // Draw texture lines for brushed aluminum effect
+                    val lineColor = Color.Black.copy(alpha = 0.02f)
+                    for (y in 0..size.height.toInt() step 3) {
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(0f, y.toFloat()),
+                            end = Offset(size.width, y.toFloat()),
+                            strokeWidth = 1f
+                        )
+                    }
+                }
+                .padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val baseWidth = 360.dp
                 val baseHeight = 780.dp
 
-                // Compute scale so UI doesn't grow larger than 1.0 on small devices,
-                // but will shrink on tall/wide devices (tablets). We derive a
-                // width scale and a height-based inverse scale and pick the
-                // minimum to ensure the UI fits vertically.
-                // Adjust `MIN_SCALE` here to change how much the UI may shrink
-                // on tablet devices (e.g., 0.6 => shrink to 60% = 40% smaller).
-                val MIN_SCALE = 0.5f
+                // Platform-specific scaling:
+                // - Android: More aggressive scaling for device adaptation
+                // - Desktop: Minimal scaling to maintain fixed window appearance
+                val MIN_SCALE = 0.6f  // Desktop: don't shrink below 60%
                 val MAX_SCALE = 1.0f
                 val scaleWidth = (maxWidth / baseWidth)
                 val scaleHeight = (baseHeight / maxHeight)
@@ -135,14 +152,12 @@ fun CalculatorScreen(
                 // buttons proportional when centered on tablets.
                 val contentWidth = maxWidth * scale
 
-                // Keep the LCD display at (or near) original size so its text
-                // remains readable; only scale the button grid. You can tweak
-                // `displayScale` if you want partial scaling of the display.
-                val displayScale = 1.0f
+                // Scale everything proportionally including LCD display
+                val displayScale = scale
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(58.dp * scale),
-                    modifier = Modifier.fillMaxSize().padding(top = 42.dp * scale)
+                    verticalArrangement = Arrangement.spacedBy(24.dp * scale),
+                    modifier = Modifier.fillMaxSize().padding(top = 16.dp * scale, bottom = 16.dp * scale)
                 ) {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                         Column(
@@ -206,15 +221,15 @@ private fun DisplayPanel(
 
     Surface(
         modifier = lpModifier.fillMaxWidth()
-            .heightIn(min = 180.dp * scale)
+            .height(180.dp * scale)
             .shadow(
                 12.dp * scale,
-                RoundedCornerShape(28.dp),
+                RoundedCornerShape(28.dp * scale),
                 clip = false,
                 ambientColor = ButtonShadow,
                 spotColor = ButtonShadow
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(28.dp * scale),
         color = Color.Transparent
     ) {
         Column(
@@ -225,7 +240,7 @@ private fun DisplayPanel(
                         lcdColor
                     )
                 )
-            ).border(1.8.dp, LcdBorder, RoundedCornerShape(28.dp)).padding(horizontal = 8.dp * scale, vertical = 24.dp * scale),
+            ).border(1.8.dp * scale, LcdBorder, RoundedCornerShape(28.dp * scale)).padding(horizontal = 12.dp * scale, vertical = 20.dp * scale),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -237,18 +252,20 @@ private fun DisplayPanel(
                 val memoryAlpha by animateFloatAsState(targetValue = if (state.memoryValue == 0.0) 0f else 1f, label = "memoryIndicatorAlpha")
                 Text(
                     text = "M",
-                    style = MaterialTheme.typography.displayMedium,
+                    style = MaterialTheme.typography.displayMedium.copy(fontSize = MaterialTheme.typography.displayMedium.fontSize * scale * 0.7f),
                     color = LcdTextSecondary.copy(alpha = memoryAlpha),
-                    modifier = Modifier.padding(top = 2.dp),
+                    modifier = Modifier.padding(top = 2.dp * scale),
                     maxLines = 1,
                     overflow = TextOverflow.Clip
                 )
-                Box(modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp * scale)) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp * scale)
+                ) {
                     Column(modifier = Modifier.align(Alignment.TopEnd).height(120.dp * scale), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp * scale)) {
                         Box(modifier = Modifier.height(72.dp * scale)) {
                             Text(
                                 text = state.displayValue + ",",
-                                style = adaptiveTypography().displayLarge,
+                                style = adaptiveTypography().displayLarge.copy(fontSize = adaptiveTypography().displayLarge.fontSize * scale * 0.75f),
                                 color = LcdTextPrimary.copy(alpha = 0f),
                                 maxLines = 1,
                                 overflow = TextOverflow.Clip,
@@ -259,14 +276,17 @@ private fun DisplayPanel(
                                     append(state.displayValue)
                                     withStyle(SpanStyle(color = Color.Transparent)) { append(",") }
                                 },
-                                style = adaptiveTypography().displayLarge.copy(lineHeight = adaptiveTypography().displayLarge.fontSize * 1.1f),
+                                style = adaptiveTypography().displayLarge.copy(
+                                    fontSize = adaptiveTypography().displayLarge.fontSize * scale * 0.75f,
+                                    lineHeight = adaptiveTypography().displayLarge.fontSize * scale * 0.75f * 1.1f
+                                ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Clip
                             )
                         }
                         Text(
                             text = state.previousExpression,
-                            style = adaptiveTypography().displayMedium,
+                            style = adaptiveTypography().displayMedium.copy(fontSize = adaptiveTypography().displayMedium.fontSize * scale * 0.85f),
                             color = LcdTextSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Clip,
@@ -321,9 +341,9 @@ private fun CalculatorButton(spec: ButtonSpec, modifier: Modifier = Modifier, on
     val usesMemoryFont = spec.role == ButtonRole.Memory || spec.label == "DEL"
     val textStyle =
         if (usesMemoryFont) {
-            MaterialTheme.typography.labelMedium
+            MaterialTheme.typography.labelMedium.copy(fontSize = MaterialTheme.typography.labelMedium.fontSize * 0.85f)
         } else {
-            MaterialTheme.typography.labelLarge
+            MaterialTheme.typography.labelLarge.copy(fontSize = MaterialTheme.typography.labelLarge.fontSize * 0.85f)
         }
     val gradient =
         remember(isPressed, palette) {

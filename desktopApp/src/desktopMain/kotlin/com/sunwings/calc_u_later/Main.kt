@@ -53,7 +53,7 @@ fun main() = application {
     val (initialFormat, initialLcdIndex) = loadPrefs()
     
     val windowState = rememberWindowState(
-        size = DpSize(408.dp, 900.dp)  // Fixed size: 360dp + 48dp padding
+        size = DpSize(340.dp, 720.dp)  // Further reduced for better macOS display
     )
     
     Window(
