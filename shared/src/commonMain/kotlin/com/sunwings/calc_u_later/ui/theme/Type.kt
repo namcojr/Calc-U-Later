@@ -43,14 +43,14 @@ fun adaptiveTypography() = Typography(
         letterSpacing = 0.2.sp
     ),
     labelLarge = TextStyle(
-        fontFamily = BodyFontFamily,
+        fontFamily = BodyFontFamily,  // Default font for calculator buttons
         fontWeight = FontWeight.Bold,
         fontSize = 38.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.6.sp
     ),
     labelMedium = TextStyle(
-        fontFamily = MemoryButtonFontFamily,
+        fontFamily = MemoryButtonFontFamily,  // Monospace font for memory buttons
         fontWeight = FontWeight.ExtraBold,
         fontSize = 26.sp,
         lineHeight = 12.sp,

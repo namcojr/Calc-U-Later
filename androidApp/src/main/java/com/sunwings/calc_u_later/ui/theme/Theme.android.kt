@@ -23,7 +23,7 @@ private val CalculatorColorScheme = lightColorScheme(
 fun CalcULaterThemeAndroid(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = CalculatorColorScheme,
-        typography = adaptiveTypographyAndroid(),
+        typography = getAndroidTypography(),
         content = content
     )
 }
