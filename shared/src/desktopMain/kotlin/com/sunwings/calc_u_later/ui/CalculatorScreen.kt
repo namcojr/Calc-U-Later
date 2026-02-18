@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,11 +37,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
@@ -85,6 +95,11 @@ fun CalculatorScreen(
     onLcdIndexChange: ((Int) -> Unit)? = null
 ) {
     var state by rememberSaveable { mutableStateOf(CalculatorState(localeFormat = initialFormat ?: CalculatorState().localeFormat)) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     // LCD color cycling state: 0 = base (light blue), 1 = vintage green, 2 = amber
     val lcdColors = listOf(LcdBase, LcdVintageGreen, LcdAmber)
@@ -93,7 +108,22 @@ fun CalculatorScreen(
 
     val buttonRows = remember(state.localeFormat) { calculatorButtons(state.localeFormat) }
 
-    Box(modifier = modifier.fillMaxSize().background(CalcBackgroundTop)) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(CalcBackgroundTop)
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                val action = mapKeyEventToAction(event)
+                if (action != null) {
+                    state = onCalculatorAction(state, action)
+                    true
+                } else {
+                    false
+                }
+            }
+    ) {
         Box(
             modifier =
             Modifier.fillMaxSize()
@@ -494,6 +524,32 @@ private fun calculatorButtons(format: NumberFormatStyle): List<List<ButtonSpec>>
             )
         )
     }
+
+private fun mapKeyEventToAction(event: KeyEvent): CalculatorAction? {
+    if (event.type != KeyEventType.KeyDown) return null
+
+    return when (event.key) {
+        Key.Zero, Key.NumPad0 -> CalculatorAction.Digit(0)
+        Key.One, Key.NumPad1 -> CalculatorAction.Digit(1)
+        Key.Two, Key.NumPad2 -> CalculatorAction.Digit(2)
+        Key.Three, Key.NumPad3 -> CalculatorAction.Digit(3)
+        Key.Four, Key.NumPad4 -> CalculatorAction.Digit(4)
+        Key.Five, Key.NumPad5 -> CalculatorAction.Digit(5)
+        Key.Six, Key.NumPad6 -> CalculatorAction.Digit(6)
+        Key.Seven, Key.NumPad7 -> CalculatorAction.Digit(7)
+        Key.Eight, Key.NumPad8 -> CalculatorAction.Digit(8)
+        Key.Nine, Key.NumPad9 -> CalculatorAction.Digit(9)
+        Key.Period, Key.Comma -> CalculatorAction.Decimal
+        Key.Plus, Key.NumPadAdd -> CalculatorAction.Operation(CalculatorOperation.Add)
+        Key.Minus, Key.NumPadSubtract -> CalculatorAction.Operation(CalculatorOperation.Subtract)
+        Key.NumPadMultiply -> CalculatorAction.Operation(CalculatorOperation.Multiply)
+        Key.Slash, Key.NumPadDivide -> CalculatorAction.Operation(CalculatorOperation.Divide)
+        Key.Enter, Key.NumPadEnter, Key.Equals -> CalculatorAction.Equals
+        Key.Backspace -> CalculatorAction.Backspace
+        Key.Delete, Key.Escape -> CalculatorAction.Clear
+        else -> null
+    }
+}
 
 private fun Color.adjust(multiplier: Float): Color {
     val r = (red * multiplier).coerceIn(0f, 1f)
