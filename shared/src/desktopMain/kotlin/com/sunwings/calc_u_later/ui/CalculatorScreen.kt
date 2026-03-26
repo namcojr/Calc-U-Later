@@ -528,22 +528,58 @@ private fun calculatorButtons(format: NumberFormatStyle): List<List<ButtonSpec>>
 private fun mapKeyEventToAction(event: KeyEvent): CalculatorAction? {
     if (event.type != KeyEventType.KeyDown) return null
 
+    val nativeEvent = event.nativeKeyEvent as? java.awt.event.KeyEvent
+    if (nativeEvent != null) {
+        val shiftDown = nativeEvent.isShiftDown ||
+            (nativeEvent.modifiersEx and java.awt.event.InputEvent.SHIFT_DOWN_MASK) != 0
+        if (shiftDown) {
+            when (nativeEvent.keyCode) {
+                java.awt.event.KeyEvent.VK_7 -> return CalculatorAction.Operation(CalculatorOperation.Divide)
+                java.awt.event.KeyEvent.VK_8 -> return CalculatorAction.Operation(CalculatorOperation.Multiply)
+                java.awt.event.KeyEvent.VK_EQUALS,
+                java.awt.event.KeyEvent.VK_PLUS -> return CalculatorAction.Operation(CalculatorOperation.Multiply)
+            }
+            when (nativeEvent.keyChar) {
+                '7' -> return CalculatorAction.Operation(CalculatorOperation.Divide)
+                '+' -> return CalculatorAction.Operation(CalculatorOperation.Multiply)
+            }
+        }
+
+        val typedChar = nativeEvent.keyChar
+        if (typedChar != java.awt.event.KeyEvent.CHAR_UNDEFINED && !typedChar.isISOControl()) {
+            mapTypedCharToAction(typedChar)?.let { return it }
+        }
+    }
+
     return when (event.key) {
-        Key.Zero, Key.NumPad0 -> CalculatorAction.Digit(0)
-        Key.One, Key.NumPad1 -> CalculatorAction.Digit(1)
-        Key.Two, Key.NumPad2 -> CalculatorAction.Digit(2)
-        Key.Three, Key.NumPad3 -> CalculatorAction.Digit(3)
-        Key.Four, Key.NumPad4 -> CalculatorAction.Digit(4)
-        Key.Five, Key.NumPad5 -> CalculatorAction.Digit(5)
-        Key.Six, Key.NumPad6 -> CalculatorAction.Digit(6)
-        Key.Seven, Key.NumPad7 -> CalculatorAction.Digit(7)
-        Key.Eight, Key.NumPad8 -> CalculatorAction.Digit(8)
-        Key.Nine, Key.NumPad9 -> CalculatorAction.Digit(9)
+        Key.Zero -> CalculatorAction.Digit(0)
+        Key.One -> CalculatorAction.Digit(1)
+        Key.Two -> CalculatorAction.Digit(2)
+        Key.Three -> CalculatorAction.Digit(3)
+        Key.Four -> CalculatorAction.Digit(4)
+        Key.Five -> CalculatorAction.Digit(5)
+        Key.Six -> CalculatorAction.Digit(6)
+        Key.Seven -> CalculatorAction.Digit(7)
+        Key.Eight -> CalculatorAction.Digit(8)
+        Key.Nine -> CalculatorAction.Digit(9)
+        Key.NumPad0 -> CalculatorAction.Digit(0)
+        Key.NumPad1 -> CalculatorAction.Digit(1)
+        Key.NumPad2 -> CalculatorAction.Digit(2)
+        Key.NumPad3 -> CalculatorAction.Digit(3)
+        Key.NumPad4 -> CalculatorAction.Digit(4)
+        Key.NumPad5 -> CalculatorAction.Digit(5)
+        Key.NumPad6 -> CalculatorAction.Digit(6)
+        Key.NumPad7 -> CalculatorAction.Digit(7)
+        Key.NumPad8 -> CalculatorAction.Digit(8)
+        Key.NumPad9 -> CalculatorAction.Digit(9)
         Key.Period, Key.Comma -> CalculatorAction.Decimal
-        Key.Plus, Key.NumPadAdd -> CalculatorAction.Operation(CalculatorOperation.Add)
-        Key.Minus, Key.NumPadSubtract -> CalculatorAction.Operation(CalculatorOperation.Subtract)
+        Key.Plus -> CalculatorAction.Operation(CalculatorOperation.Add)
+        Key.Minus -> CalculatorAction.Operation(CalculatorOperation.Subtract)
+        Key.Slash -> CalculatorAction.Operation(CalculatorOperation.Divide)
+        Key.NumPadAdd -> CalculatorAction.Operation(CalculatorOperation.Add)
+        Key.NumPadSubtract -> CalculatorAction.Operation(CalculatorOperation.Subtract)
         Key.NumPadMultiply -> CalculatorAction.Operation(CalculatorOperation.Multiply)
-        Key.Slash, Key.NumPadDivide -> CalculatorAction.Operation(CalculatorOperation.Divide)
+        Key.NumPadDivide -> CalculatorAction.Operation(CalculatorOperation.Divide)
         Key.Enter, Key.NumPadEnter, Key.Equals -> CalculatorAction.Equals
         Key.Backspace -> CalculatorAction.Backspace
         Key.Delete, Key.Escape -> CalculatorAction.Clear
