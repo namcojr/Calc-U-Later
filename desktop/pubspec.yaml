@@ -1,0 +1,58 @@
+name: calc_u_later
+description: "A beautiful, realistic calculator for desktop (Windows, Linux, macOS)."
+publish_to: 'none'
+
+version: 1.8.0+18
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  # Persist user preferences (number format + LCD color) across restarts.
+  shared_preferences: ^2.3.2
+  # Configure the native desktop window (size, title, non-resizable).
+  window_manager: ^0.4.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # Generates platform icons (Windows .ico, macOS .icns) from one PNG.
+  flutter_launcher_icons: ^0.14.1
+
+# Icon generation config: run `dart run flutter_launcher_icons`.
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/aluminum.jpg
+
+  fonts:
+    # LCD main number font (matches Android led_italic.ttf)
+    - family: LedItalic
+      fonts:
+        - asset: assets/fonts/led_italic.ttf
+    # LCD dot-matrix font for the secondary line and memory indicator
+    - family: LedDotMatrix
+      fonts:
+        - asset: assets/fonts/led_dot_matrix.ttf
+    # Monospace font for memory buttons + DEL (matches Android monospace)
+    - family: CalcMono
+      fonts:
+        - asset: assets/fonts/DejaVuSansMono.ttf
+        - asset: assets/fonts/DejaVuSansMono-Bold.ttf
+          weight: 700

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Calc-U-Later
+GenericName=Calculator
+Comment=A beautiful, realistic calculator
+Exec=calc_u_later
+Icon=calc-u-later
+Categories=Utility;Calculator;
+Terminal=false
+StartupWMClass=com.sunwings.calc_u_later
+Keywords=calculator;math;arithmetic;

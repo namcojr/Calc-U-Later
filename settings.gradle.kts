@@ -20,4 +20,3 @@ rootProject.name = "Calc-U-Later"
 
 include(":shared")
 include(":androidApp")
-include(":desktopApp")
