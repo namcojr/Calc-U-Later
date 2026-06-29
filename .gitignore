@@ -57,6 +57,12 @@ signingConfigs/
 *.hprof
 *.heap
 
+# Keep Flutter desktop runtime assets versioned for CI builds.
+!desktop/assets/fonts/*.ttf
+!desktop/assets/images/*.jpg
+!desktop/assets/icon/*.ico
+!desktop/assets/icon/*.png
+
 # Generated documentation
 DISTRIBUTION_READY.txt
 FONTS_INSTALLATION.md
