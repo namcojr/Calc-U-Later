@@ -14,6 +14,16 @@ const _lcdColors = [
   CalcColors.lcdAmber,
 ];
 
+const _mainDisplayBaseStyle = TextStyle(
+  fontFamily: CalcFonts.ledItalic,
+  fontSize: 52,
+  height: 1.1,
+  letterSpacing: 0.5,
+  color: CalcColors.lcdTextPrimary,
+);
+
+const _mainDisplayProbeText = '-8888888888';
+
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({
     super.key,
@@ -41,7 +51,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   void initState() {
     super.initState();
     _state = CalculatorState(
-      localeFormat: widget.initialFormat ?? const CalculatorState().localeFormat,
+      localeFormat:
+          widget.initialFormat ?? const CalculatorState().localeFormat,
     );
     _lcdIndex = widget.initialLcdIndex % _lcdColors.length;
   }
@@ -122,8 +133,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   final bFromWidth = (contentW - gridSpacing * 3) / 4;
                   // Button size from height: 6 rows (first row is 0.65x) + gaps.
                   final gridGaps = gridSpacing * 5;
-                  final availGridH =
-                      innerH - displayH - displayGap - gridGaps;
+                  final availGridH = innerH - displayH - displayGap - gridGaps;
                   final bFromHeight = availGridH / 5.65;
                   final buttonSize =
                       (bFromWidth < bFromHeight ? bFromWidth : bFromHeight)
@@ -186,6 +196,24 @@ class _DisplayPanel extends StatelessWidget {
   final VoidCallback onLongPress;
   final ValueChanged<int> onCycle;
 
+  double _initialMainFontSize(BuildContext context, double maxWidth) {
+    final painter = TextPainter(
+      text: const TextSpan(
+        text: _mainDisplayProbeText,
+        style: _mainDisplayBaseStyle,
+      ),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+    )..layout();
+
+    if (painter.width <= 0) {
+      return _mainDisplayBaseStyle.fontSize!;
+    }
+
+    final scale = (maxWidth / painter.width).clamp(0.0, 1.0);
+    return _mainDisplayBaseStyle.fontSize! * scale;
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -236,41 +264,48 @@ class _DisplayPanel extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Main number
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      state.displayValue,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontFamily: CalcFonts.ledItalic,
-                        fontSize: 52,
-                        height: 1.1,
-                        letterSpacing: 0.5,
-                        color: CalcColors.lcdTextPrimary,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Start with the same size that can already hold up to a full
+                  // signed 10-digit input, then only scale down for longer outputs.
+                  final initialMainSize = _initialMainFontSize(
+                    context,
+                    constraints.maxWidth,
+                  );
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Main number
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          state.displayValue,
+                          maxLines: 1,
+                          style: _mainDisplayBaseStyle.copyWith(
+                            fontSize: initialMainSize,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Previous expression
-                  Text(
-                    state.previousExpression,
-                    maxLines: 1,
-                    overflow: TextOverflow.clip,
-                    softWrap: false,
-                    style: const TextStyle(
-                      fontFamily: CalcFonts.ledDotMatrix,
-                      fontSize: 16,
-                      letterSpacing: -0.2,
-                      color: CalcColors.lcdTextSecondary,
-                    ),
-                  ),
-                ],
+                      const SizedBox(height: 8),
+                      // Previous expression
+                      Text(
+                        state.previousExpression,
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
+                        softWrap: false,
+                        style: const TextStyle(
+                          fontFamily: CalcFonts.ledDotMatrix,
+                          fontSize: 16,
+                          letterSpacing: -0.2,
+                          color: CalcColors.lcdTextSecondary,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -302,28 +337,45 @@ _ButtonPalette _paletteFor(_ButtonRole role) {
   switch (role) {
     case _ButtonRole.memory:
       return const _ButtonPalette(
-          CalcColors.buttonFunctionTop, CalcColors.buttonFunctionBottom, Colors.white);
+        CalcColors.buttonFunctionTop,
+        CalcColors.buttonFunctionBottom,
+        Colors.white,
+      );
     case _ButtonRole.function:
       return const _ButtonPalette(
-          CalcColors.buttonOperatorTop, CalcColors.buttonOperatorBottom, CalcColors.baseText);
+        CalcColors.buttonOperatorTop,
+        CalcColors.buttonOperatorBottom,
+        CalcColors.baseText,
+      );
     case _ButtonRole.operator:
       return const _ButtonPalette(
-          CalcColors.buttonOperatorTop, CalcColors.buttonOperatorBottom, CalcColors.baseText);
+        CalcColors.buttonOperatorTop,
+        CalcColors.buttonOperatorBottom,
+        CalcColors.baseText,
+      );
     case _ButtonRole.numeric:
       return const _ButtonPalette(
-          CalcColors.buttonNumericTop, CalcColors.buttonNumericBottom, CalcColors.baseText);
+        CalcColors.buttonNumericTop,
+        CalcColors.buttonNumericBottom,
+        CalcColors.baseText,
+      );
     case _ButtonRole.clear:
       return const _ButtonPalette(
-          CalcColors.buttonClearTop, CalcColors.buttonClearBottom, Colors.white);
+        CalcColors.buttonClearTop,
+        CalcColors.buttonClearBottom,
+        Colors.white,
+      );
     case _ButtonRole.equals:
       return const _ButtonPalette(
-          CalcColors.buttonEqualsTop, CalcColors.buttonEqualsBottom, Colors.white);
+        CalcColors.buttonEqualsTop,
+        CalcColors.buttonEqualsBottom,
+        Colors.white,
+      );
   }
 }
 
 List<List<_ButtonSpec>> _calculatorButtons(NumberFormatStyle format) {
-  final decimal =
-      format == NumberFormatStyle.dotGroupDecimalComma ? ',' : '.';
+  final decimal = format == NumberFormatStyle.dotGroupDecimalComma ? ',' : '.';
   return [
     [
       const _ButtonSpec('MC', _ButtonRole.memory, MemoryClearAction()),
@@ -335,29 +387,41 @@ List<List<_ButtonSpec>> _calculatorButtons(NumberFormatStyle format) {
       const _ButtonSpec('AC', _ButtonRole.clear, ClearAction()),
       const _ButtonSpec('%', _ButtonRole.function, PercentAction()),
       const _ButtonSpec('+/-', _ButtonRole.function, ToggleSignAction()),
-      const _ButtonSpec('\u00F7', _ButtonRole.operator,
-          OperationAction(CalculatorOperation.divide)),
+      const _ButtonSpec(
+        '\u00F7',
+        _ButtonRole.operator,
+        OperationAction(CalculatorOperation.divide),
+      ),
     ],
     [
       const _ButtonSpec('7', _ButtonRole.numeric, DigitAction(7)),
       const _ButtonSpec('8', _ButtonRole.numeric, DigitAction(8)),
       const _ButtonSpec('9', _ButtonRole.numeric, DigitAction(9)),
-      const _ButtonSpec('\u00D7', _ButtonRole.operator,
-          OperationAction(CalculatorOperation.multiply)),
+      const _ButtonSpec(
+        '\u00D7',
+        _ButtonRole.operator,
+        OperationAction(CalculatorOperation.multiply),
+      ),
     ],
     [
       const _ButtonSpec('4', _ButtonRole.numeric, DigitAction(4)),
       const _ButtonSpec('5', _ButtonRole.numeric, DigitAction(5)),
       const _ButtonSpec('6', _ButtonRole.numeric, DigitAction(6)),
-      const _ButtonSpec('\u2212', _ButtonRole.operator,
-          OperationAction(CalculatorOperation.subtract)),
+      const _ButtonSpec(
+        '\u2212',
+        _ButtonRole.operator,
+        OperationAction(CalculatorOperation.subtract),
+      ),
     ],
     [
       const _ButtonSpec('1', _ButtonRole.numeric, DigitAction(1)),
       const _ButtonSpec('2', _ButtonRole.numeric, DigitAction(2)),
       const _ButtonSpec('3', _ButtonRole.numeric, DigitAction(3)),
-      const _ButtonSpec('+', _ButtonRole.operator,
-          OperationAction(CalculatorOperation.add)),
+      const _ButtonSpec(
+        '+',
+        _ButtonRole.operator,
+        OperationAction(CalculatorOperation.add),
+      ),
     ],
     [
       const _ButtonSpec('DEL', _ButtonRole.function, BackspaceAction()),
@@ -434,10 +498,12 @@ class _CalcButtonState extends State<_CalcButton> {
   @override
   Widget build(BuildContext context) {
     final palette = _paletteFor(widget.spec.role);
-    final highlight =
-        _pressed ? _adjust(palette.top, 0.9) : _adjust(palette.top, 1.05);
-    final shadow =
-        _pressed ? _adjust(palette.bottom, 0.85) : _adjust(palette.bottom, 0.95);
+    final highlight = _pressed
+        ? _adjust(palette.top, 0.9)
+        : _adjust(palette.top, 1.05);
+    final shadow = _pressed
+        ? _adjust(palette.bottom, 0.85)
+        : _adjust(palette.bottom, 0.95);
 
     final usesMemoryFont =
         widget.spec.role == _ButtonRole.memory || widget.spec.label == 'DEL';
